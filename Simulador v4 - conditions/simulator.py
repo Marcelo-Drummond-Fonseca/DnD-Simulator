@@ -7,11 +7,12 @@ class Simulator:
         if not hasattr(cls, 'instance'):
           cls.instance = super(Simulator, cls).__new__(cls)
         return cls.instance
-        
+    
     def start_simulation(self,team1,team2):
         iniciative = []
         self.team1 = team1
         self.team2 = team2
+        self.acting_order = []
         for creature in team1:
             iniciative.append([creature.roll_iniciative(), creature])
             creature.add_simulator(self, 1)

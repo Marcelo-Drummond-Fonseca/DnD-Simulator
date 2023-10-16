@@ -107,16 +107,21 @@ class Damage(Effect):
         self.follow_effect = follow_effect
     
     def apply(self, targets, result_list, creature):
-        damage = diceroll(self.damage_die_amount,self.damage_die_size,self.damage_modifier)
-        crit_damage = diceroll(2*self.damage_die_amount,self.damage_die_size,self.damage_modifier)
-        half_damage = floor(damage/2)
-        for i in range(len(targets)):
-            if result_list[i] == 1:
-                targets[i].take_damage(damage,self.damage_type)
-            elif result_list[i] == 2:
-                targets[i].take_damage(crit_damage,self.damage_type)
-            elif result_list[i] == 0:
-                targets[i].take_damage(half_damage,self.damage_type)
+        if len(targets) > 1:
+            damage = diceroll(self.damage_die_amount,self.damage_die_size,self.damage_modifier)
+            half_damage = floor(damage/2)
+            for i in range(len(targets)):
+                if result_list[i] == 1:
+                    targets[i].take_damage(damage,self.damage_type)
+                elif result_list[i] == 0:
+                    targets[i].take_damage(half_damage,self.damage_type)
+        elif len(targets) == 1:
+            if result_list[0] == 1:
+                damage = diceroll(self.damage_die_amount,self.damage_die_size,self.damage_modifier)
+                targets[0].take_damage(damage,self.damage_type)
+            elif result_list[0] == 2:
+                crit_damage = diceroll(2*self.damage_die_amount,self.damage_die_size,self.damage_modifier)
+                targets[0].take_damage(crit_damage,self.damage_type)
         if self.follow_attack:
             self.follow_attack.act(targets)
         if self.follow_attempt:
@@ -136,7 +141,7 @@ class Healing(Effect):
         for target in targets:
             target.recover_hit_points(amount)
 
-class Condition(Effect):
+class Apply_Condition(Effect):
 
     def __init__(self, condition, concentration = False):
         self.condition = condition
@@ -145,9 +150,9 @@ class Condition(Effect):
     def apply(self, targets, result_list, creature):
         for i in range(len(targets)):
             if result_list[i] >=1:
-                creature.add_applied_condition(condition, concentration)
-                targets[i].add_condition(condition)
-                condition.add_caster_target(creature, targets[i])
+                creature.add_applied_condition(self.condition, self.concentration)
+                targets[i].add_condition(self.condition)
+                self.condition.add_caster_target(creature, targets[i])
 
 #class Basic_Attack(Action):
 #    

@@ -30,7 +30,7 @@ class Creature:
         self.concentration = False
         self.conditions = []
         self.applied_conditions = {
-            "Concentration": []
+            "Concentration": [],
             "Non-Concentration": []
         }
         simulator = None
@@ -58,6 +58,13 @@ class Creature:
         elif regain_type == 'Recharge':
             self.recharge_resources[resource_type] = recharge_number
     
+    def full_restore(self):
+        self.HP = self.MHP
+        for resource_type, resource_amount in self.max_resources.items():
+            self.current_resources[resource_type] = self.max_resources[resource_type]
+        for condition in self.conditions:
+            condition.remove_condition()
+    
     def add_simulator(self, simulator, team):
         self.simulator = simulator
         self.team = team
@@ -76,20 +83,24 @@ class Creature:
     
     def add_condition(self, condition):
         self.conditions.append(condition)
+        print(self.name, "ganhou condição:", condition.name)
     
     def remove_condition(self, condition):
         self.conditions.remove(condition)
+        print(self.name, "perdeu condição:", condition.name)
     
     def start_of_turn(self):
+        print('\nTurno de:', self.name)
         for condition in self.conditions:
-            condition.notify_SoT(self)
-        for condition in self.applied_conditions:
-            condition.notify_SoT(self)
+            condition.notify_SoT(isCaster = False)
+        for condition in self.applied_conditions['Concentration']:
+            condition.notify_SoT(isCaster = True)
+        for condition in self.applied_conditions['Non-Concentration']:
+            condition.notify_SoT(isCaster = True)
         self.take_turn()
     
     def take_turn(self):
         #No futuro, adicionar aqui lógica de ações
-        print('\nTurno de:', self.name)
         #Recharge
         for resource_type, recharge in self.recharge_resources.items():
             if recharge <= diceroll(1,6,0):
@@ -120,10 +131,10 @@ class Creature:
                 print(self.name, 'usa', free_action.name, 'contra', *(getattr(creature, "name") for creature in targets))
                 if free_action.resource_cost:
                     self.current_resources[free_action.resource_cost[0]] -= free_action.resource_cost[1]
-                free_action.act(targets)
+                free_action.act(targets, self)
         
         #Filtrar ações bonus por recursos
-        for i in range(bonus_action_number):
+        for i in range(self.bonus_action_number):
             possible_bonus_actions = []
             for bonus_actions in self.bonus_actions:
                 possible = True
@@ -146,10 +157,10 @@ class Creature:
                     print(self.name, 'usa', bonus_action.name, 'contra', *(getattr(creature, "name") for creature in targets))
                     if bonus_action.resource_cost:
                         self.current_resources[bonus_action.resource_cost[0]] -= bonus_action.resource_cost[1]
-                    bonus_action.act(targets)
+                    bonus_action.act(targets, self)
         
         #Filtrar ações por recursos
-        for i in range(action_number):
+        for i in range(self.action_number):
             possible_actions = []
             for actions in self.actions:
                 possible = True
@@ -172,15 +183,17 @@ class Creature:
                 print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
                 if action.resource_cost:
                     self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
-                action.act(targets)
+                action.act(targets, self)
             
         self.end_of_turn()
     
-    def end_of_turn():
+    def end_of_turn(self):
         for condition in self.conditions:
-            condition.notify_EoT(self)
-        for condition in self.applied_conditions:
-            condition.notify_EoT(self)
+            condition.notify_EoT(isCaster = False)
+        for condition in self.applied_conditions['Concentration']:
+            condition.notify_EoT(isCaster = True)
+        for condition in self.applied_conditions['Non-Concentration']:
+            condition.notify_EoT(isCaster = True)
     
     def check_hit(self, attack_roll):
         if attack_roll >= self.AC:
@@ -212,8 +225,9 @@ class Creature:
         
     def recover_hit_points(self,amount):
         self.HP += amount
-        if self.HP > self.MHP:
-            self.HP = self.MHP
+        #Atualmente removendo o cap de max HP até definir lógica de ações
+        #if self.HP > self.MHP:
+        #    self.HP = self.MHP
         print(self.name, 'recupera',amount,'de hp. Está agora com',self.HP)
     
     def roll_iniciative(self):

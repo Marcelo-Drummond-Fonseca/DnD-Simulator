@@ -1,13 +1,14 @@
 import action as act
 
 
-class Conditions:
+class Condition:
 
-    def __init__(self, name, end_condition, duration, effect_type, condition_effects):
+    def __init__(self, name, end_condition, max_duration, condition_effects):
         self.name = name
         self.end_condition = end_condition
-        self.duration = duration
-        self.effect_type = effect_type
+        self.max_duration = max_duration
+        self.duration = max_duration
+        #self.effect_type = effect_type
         self.condition_effects = condition_effects
         self.caster = None
         self.target = None
@@ -15,28 +16,29 @@ class Conditions:
     def add_caster_target(self, caster, target):
         self.caster = caster
         self.target = target
+        self.duration = self.max_duration
         for effect in self.condition_effects:
             effect.apply_effect(target)
         
-    def notify_SoT(self, creature):
-        if self.end_condition == "Start of Caster Turn" and creature == caster:
+    def notify_SoT(self, isCaster = True):
+        if self.end_condition == "Start of Caster Turn" and isCaster:
             self.duration -= 1
-        elif self.end_condition == "Start of Target Turn" and creature == target:
+        elif self.end_condition == "Start of Target Turn" and not isCaster:
             self.duration -= 1
         if self.duration <= 0:
-            self.end_condition()
+            self.remove_condition()
             
-    def notify_EoT(self, creature):
-        if self.end_condition == "End of Caster Turn" and creature == caster:
+    def notify_EoT(self, isCaster = True):
+        if self.end_condition == "End of Caster Turn" and isCaster:
             self.duration -= 1
-        elif self.end_condition == "End of Target Turn" and creature == target:
+        elif self.end_condition == "End of Target Turn" and not isCaster:
             self.duration -= 1
         if self.duration <= 0:
-            self.end_condition()
+            self.remove_condition()
     
-    def end_condition(self):
+    def remove_condition(self):
         for effect in self.condition_effects:
-            effect.remove_effect(target)
+            effect.remove_effect(self.target)
         self.caster.remove_applied_condition(self)
         self.target.remove_condition(self)
     
@@ -92,7 +94,7 @@ class Modified_Defense(Condition_Effect):
         self.damage_type_multipliers = damage_type_multipliers
         self.damage_type_reductions = damage_type_reductions
     
-    def.apply_effect(self, target):
+    def apply_effect(self, target):
         target.AC += self.AC_bonus
         if self.ac_advantage == 1:
             target.AC_advantage += 1
@@ -109,7 +111,7 @@ class Modified_Defense(Condition_Effect):
         for damage_type, damage_reduction in self.damage_type_reductions.items():
             target.damage_type_reductions[damage_type] = damage_reduction
             
-    def.remove_effect(self, target):
+    def remove_effect(self, target):
         target.AC -= self.AC_bonus
         if self.ac_advantage == 1:
             target.AC_advantage -= 1
