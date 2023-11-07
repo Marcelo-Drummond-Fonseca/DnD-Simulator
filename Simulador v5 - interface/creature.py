@@ -18,6 +18,7 @@ class Creature:
         self.actions = []
         self.bonus_actions = []
         self.free_actions = []
+        self.combos = []
         self.action_number = 1
         self.bonus_action_number = 1
         self.reaction_number = 1
@@ -44,6 +45,18 @@ class Creature:
     
     def add_free_action(self, action):
         self.free_actions.append(action)
+        
+    def add_combo(self, combo):
+        new_combo = []
+        for combo_piece in combo:
+            combo_index = None
+            for index, action in enumerate(self.actions):
+                if action.name == combo_piece:
+                    combo_index = index
+            if combo_index is not None:
+                new_combo.append(combo_index)
+        self.combos.append(new_combo)
+                    
     
     def add_damage_type_multiplier(self, damage_type, multiplier):
         self.damage_type_multipliers[damage_type] = multiplier
@@ -89,6 +102,60 @@ class Creature:
         self.conditions.remove(condition)
         print(self.name, "perdeu condição:", condition.name)
     
+    def choose_combo(self):
+        possible_actions = []
+        for combo in self.combos:
+            actions = [self.actions[i] for i in combo]
+            possible = True
+            necessary_resources = {}
+            for action in actions:
+                if action.resource_cost:
+                    if action.resource_cost[0] in necessary_resources:
+                        necessary_resources[action.resource_cost[0]] += action.resource_cost[1]
+                    else:
+                        necessary_resources[action.resource_cost[0]] = action.resource_cost[1]
+            for resource_type, resource_amount in necessary_resources.items():
+                if self.current_resources[resource_type] < resource_amount:
+                    possible = False
+            if possible:
+                possible_actions.append(actions)
+        actions = choice(possible_actions)
+        for action in actions:
+            #target = choice(self.simulator.get_enemy_team(self.team))
+            targets = action.get_targets(self)
+            print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
+            if action.resource_cost:
+                self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
+            action.act(targets, self)
+        
+    
+    def choose_single_action(self, action_type):
+        possible_actions = []
+        for actions in action_type:
+            possible = True
+            necessary_resources = {}
+            for action in actions:
+                if action.resource_cost:
+                    if action.resource_cost[0] in necessary_resources:
+                        necessary_resources[action.resource_cost[0]] += action.resource_cost[1]
+                    else:
+                        necessary_resources[action.resource_cost[0]] = action.resource_cost[1]
+            for resource_type, resource_amount in necessary_resources.items():
+                if self.current_resources[resource_type] < resource_amount:
+                    possible = False
+            if possible:
+                possible_actions.append(actions)
+        if possible_actions:
+            actions = choice(possible_actions)
+            for action in actions:
+                #target = choice(self.simulator.get_enemy_team(self.team))
+                targets = action.get_targets(self)
+                print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
+                if action.resource_cost:
+                    self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
+                action.act(targets, self)
+        
+    
     def start_of_turn(self):
         print('\nTurno de:', self.name)
         for condition in self.conditions:
@@ -100,91 +167,21 @@ class Creature:
         self.take_turn()
     
     def take_turn(self):
-        #No futuro, adicionar aqui lógica de ações
         #Recharge
         for resource_type, recharge in self.recharge_resources.items():
             if recharge <= diceroll(1,6,0):
                 self.current_resources[resource_type] = self.max_resources[resource_type]
                 print(self.name,'Recarrega seu',resource_type)
         
+        
         #Filtrar Free actions por recursos
-        
-        possible_free_actions = []
-        for free_actions in self.free_actions:
-            possible = True
-            necessary_resources = {}
-            for free_action in free_actions:
-                if free_action.resource_cost:
-                    if free_action.resource_cost[0] in necessary_resources:
-                        necessary_resources[free_action.resource_cost[0]] += free_action.resource_cost[1]
-                    else:
-                        necessary_resources[free_action.resource_cost[0]] = free_action.resource_cost[1]
-            for resource_type, resource_amount in necessary_resources.items():
-                if self.current_resources[resource_type] < resource_amount:
-                    possible = False
-            if possible:
-                possible_free_actions.append(free_actions)
-        if possible_free_actions:
-            free_actions = choice(possible_free_actions)
-            for free_action in free_actions:
-                targets = free_action.get_targets(self)
-                print(self.name, 'usa', free_action.name, 'contra', *(getattr(creature, "name") for creature in targets))
-                if free_action.resource_cost:
-                    self.current_resources[free_action.resource_cost[0]] -= free_action.resource_cost[1]
-                free_action.act(targets, self)
-        
-        #Filtrar ações bonus por recursos
+        self.choose_single_action(self.free_actions)
         for i in range(self.bonus_action_number):
-            possible_bonus_actions = []
-            for bonus_actions in self.bonus_actions:
-                possible = True
-                necessary_resources = {}
-                for bonus_action in bonus_actions:
-                    if bonus_action.resource_cost:
-                        if bonus_action.resource_cost[0] in necessary_resources:
-                            necessary_resources[bonus_action.resource_cost[0]] += bonus_action.resource_cost[1]
-                        else:
-                            necessary_resources[bonus_action.resource_cost[0]] = bonus_action.resource_cost[1]
-                for resource_type, resource_amount in necessary_resources.items():
-                    if self.current_resources[resource_type] < resource_amount:
-                        possible = False
-                if possible:
-                    possible_bonus_actions.append(bonus_actions)
-            if possible_bonus_actions:
-                bonus_actions = choice(possible_bonus_actions)
-                for bonus_action in bonus_actions:
-                    targets = bonus_action.get_targets(self)
-                    print(self.name, 'usa', bonus_action.name, 'contra', *(getattr(creature, "name") for creature in targets))
-                    if bonus_action.resource_cost:
-                        self.current_resources[bonus_action.resource_cost[0]] -= bonus_action.resource_cost[1]
-                    bonus_action.act(targets, self)
-        
-        #Filtrar ações por recursos
+            #Filtrar ações bonus por recursos
+            self.choose_single_action(self.bonus_actions)
         for i in range(self.action_number):
-            possible_actions = []
-            for actions in self.actions:
-                possible = True
-                necessary_resources = {}
-                for action in actions:
-                    if action.resource_cost:
-                        if action.resource_cost[0] in necessary_resources:
-                            necessary_resources[action.resource_cost[0]] += action.resource_cost[1]
-                        else:
-                            necessary_resources[action.resource_cost[0]] = action.resource_cost[1]
-                for resource_type, resource_amount in necessary_resources.items():
-                    if self.current_resources[resource_type] < resource_amount:
-                        possible = False
-                if possible:
-                    possible_actions.append(actions)
-            actions = choice(possible_actions)
-            for action in actions:
-                #target = choice(self.simulator.get_enemy_team(self.team))
-                targets = action.get_targets(self)
-                print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
-                if action.resource_cost:
-                    self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
-                action.act(targets, self)
-            
+            #Filtrar ações por recursos
+            self.choose_combo()
         self.end_of_turn()
     
     def end_of_turn(self):

@@ -11,38 +11,51 @@ sg.theme('SystemDefaultForReal')
 ttk_style = 'vista'
 simulator = Simulator()
 
+#Function to format creatures from the interface to the simulator
+def format_creature(creature):
+    actionlist = []
+    for action in creature['Actions']:
+        if action['Effect'] == 'Damage':
+            damage_roll = re.split('[d\+]', action['Damage Roll'])
+            effect = Damage(int(damage_roll[0]), int(damage_roll[1]), int(damage_roll[2]), action['Damage Type'])
+        if action['Action Type'] == 'Attack Roll':
+            attempt = Attack_Roll(int(action['Attack Bonus']), effect)
+        resourcecost = None
+        for resource in action['Resource Cost']:
+            resourcecost = [resource['Name'], int(resource['Number'])]
+        formatted_action = Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt, resourcecost)
+        actionlist.append(formatted_action)
+    formatted_creature = Creature(creature['Name'], int(creature['HP']), int(creature['AC']), list(map(int, creature['Saving Throws'])), int(creature['Iniciative']))
+    for resource in creature['Resources']:
+        formatted_creature.add_resource(resource['Name'], int(resource['Number']), resource['Type'])
+    for formatted_action in actionlist:
+        formatted_creature.add_action(formatted_action)
+    #Add combos here later
+    for formatted_action in actionlist:
+        formatted_creature.add_combo([formatted_action.name])
+    return formatted_creature
+
 #Function to run the simulations
 def run_simulation(team1, team2, iterations):
     #Formatting creatures
     formatted_team1 = []
     formatted_team2 = []
     for creature in team1:
-        actionlist = []
-        for action in creature['Actions']:
-            if action['Effect'] == 'Damage':
-                damage_roll = re.split('[d\+]', action['Damage Roll'])
-                effect = Damage(int(damage_roll[0]), int(damage_roll[1]), int(damage_roll[2]), action['Damage Type'])
-            if action['Action Type'] == 'Attack Roll':
-                attempt = Attack_Roll(int(action['Attack Bonus']), effect)
-            formatted_action = Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt)
-            actionlist.append(formatted_action)
-        formatted_creature = Creature(creature['Name'], int(creature['HP']), int(creature['AC']), list(map(int, creature['Saving Throws'])), int(creature['Iniciative']))
-        formatted_creature.add_action(actionlist)
-        formatted_team1.append(formatted_creature)
+        formatted_team1.append(format_creature(creature))
     for creature in team2:
-        actionlist = []
-        for action in creature['Actions']:
-            if action['Effect'] == 'Damage':
-                damage_roll = re.split('[d\+]', action['Damage Roll'])
-                effect = Damage(int(damage_roll[0]), int(damage_roll[1]), int(damage_roll[2]), action['Damage Type'])
-            if action['Action Type'] == 'Attack Roll':
-                attempt = Attack_Roll(int(action['Attack Bonus']), effect)
-            formatted_action = Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt)
-            actionlist.append(formatted_action)
-        formatted_creature = Creature(creature['Name'], int(creature['HP']), int(creature['AC']), list(map(int, creature['Saving Throws'])), int(creature['Iniciative']))
-        formatted_creature.add_action(actionlist)
-        formatted_team2.append(formatted_creature)
+        formatted_team2.append(format_creature(creature))
     simulator.start_simulation(formatted_team1,formatted_team2)
+
+# Function to save to file
+def save(filename, data):
+    with open(filename, 'w') as file:
+        json.dump(data, file)
+    
+def load(filename):
+    with open(filename, 'r') as file:
+        return json.load(file)
+        
+
 
 # Function to save creature data to a file
 def save_creature(filename):
@@ -140,7 +153,7 @@ layout_creature_stats = [
 layout_creatures_sidebar = [
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURE_', enable_events=True)],
     [sg.Listbox(values=get_creatures_list(), size=(20, 30), key='_CREATURES_', enable_events=True)],
-    [sg.Button('Add', use_ttk_buttons=True, key='Add Creature')]
+    [sg.Button('Add', use_ttk_buttons=True, key='Create New Creature')]
 ]
 
 layout_creatures = [
@@ -175,7 +188,7 @@ layout_conditions_stats = [
 layout_conditions_sidebar = [
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCONDITION_', enable_events=True)],
     [sg.Listbox(values=get_conditions_list(), size=(20, 30), key='_CONDITIONS_', enable_events=True)],
-    [sg.Button('Add', use_ttk_buttons=True, key='Add Condition')]
+    [sg.Button('Add', use_ttk_buttons=True, key='Create New Condition')]
 ]
 
 layout_conditions = [
@@ -187,7 +200,6 @@ layout_action_stats = [
     [sg.Text("Name", size=(8, 1)), sg.Input(size=(50, 1), key='_ACTIONNAME_', justification='left', enable_events=True)],
     [sg.Text("Number of Targets", size=(16, 1)), sg.Input(size=(2, 1), key='_NUMTARGETS_', justification='left', enable_events=True),
     sg.Text("Target Type", size=(11, 1)), sg.Combo(['Self', 'Enemy', 'Ally'], size=(6, 1), key='_TARGETTYPE_')],
-    [sg.Text("Resource Cost", size=(16, 1)), sg.Input(size=(5, 1), key='_RESOURCECOST_', justification='left', enable_events=True)],
     [sg.Text("Action Type", size=(8, 1)), sg.Combo(['Attack Roll', 'Saving Throw', 'Auto Apply'], size=(12, 1), key='_ACTIONTYPE_', enable_events=True)],
     [sg.Text("Effect", size=(8, 1)), sg.Combo(['Damage', 'Healing', 'Apply Condition'], size=(12, 1), key='_EFFECT_', enable_events=True)],
     [sg.Text("Properties")],
@@ -196,14 +208,18 @@ layout_action_stats = [
     [sg.Text("Save Type", size=(8, 1)), sg.Combo(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'], size=(5, 1), key='_SAVETYPE_', visible=False)],
     [sg.Text("Damage (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_DAMAGEROLL_', justification='left', enable_events=True, visible=False)],
     [sg.Text("Damage Type", size=(11, 1)), sg.Input(size=(15, 1), key='_DAMAGETYPE_', justification='left', enable_events=True, visible=False)],
+    [sg.Text("Resource Name", size=(16, 1)), sg.Input(size=(20, 1), key='_ACTIONRESOURCENAME_', justification='left', enable_events=True),
+    sg.Text("Resource Cost", size=(16, 1)), sg.Input(size=(5, 1), key='_ACTIONRESOURCECOST_', justification='left', enable_events=True)],
+    [sg.Button('Add Cost', use_ttk_buttons=True)],
+    [sg.Listbox(values=[], size=(50, 5), key='_ResourceCosts_')],
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Action'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Action')]
 ]
 
 layout_actions_sidebar = [
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTACTION_', enable_events=True)],
-    [sg.Listbox(values=[], size=(20, 30), key='_ACTIONS_', enable_events=True)],
-    [sg.Button('Add', use_ttk_buttons=True, key='Add Action')]
+    [sg.Listbox(values=get_actions_list(), size=(20, 30), key='_ACTIONS_', enable_events=True)],
+    [sg.Button('Add', use_ttk_buttons=True, key='Create New Action')]
 ]
 
 layout_actions = [
@@ -338,7 +354,7 @@ base_action_data = {
     'Name': 'New Action',
     'Number of Targets': 1,
     'Target Type': 'Self',
-    'Resource Cost': 0,
+    'Resource Cost': [],
     'Action Type': 'Attack Roll',
     'Effect': 'Damage',
     'Attack Bonus': 0,
@@ -352,7 +368,7 @@ action_data = {
     'Name': None,
     'Number of Targets': None,
     'Target Type': None,
-    'Resource Cost': None,
+    'Resource Cost': [],
     'Action Type': None,
     'Effect': None,
     'Attack Bonus': None,
@@ -366,7 +382,7 @@ def update_action(action_data):
     window['_ACTIONNAME_'].update(action_data['Name'])
     window['_NUMTARGETS_'].update(action_data['Number of Targets'])
     window['_TARGETTYPE_'].update(action_data['Target Type'])
-    window['_RESOURCECOST_'].update(action_data['Resource Cost'])
+    window['_ResourceCosts_'].update(action_data['Resource Cost'])
     window['_ACTIONTYPE_'].update(action_data['Action Type'])
     window['_EFFECT_'].update(action_data['Effect'])
     window['_ATTACKBONUS_'].update(action_data['Attack Bonus'])
@@ -379,7 +395,7 @@ def update_action_data(values):
     action_data['Name'] = values['_ACTIONNAME_']
     action_data['Number of Targets'] = values['_NUMTARGETS_']
     action_data['Target Type'] = values['_TARGETTYPE_']
-    action_data['Resource Cost'] = values['_RESOURCECOST_']
+    action_data['Resource Cost'] = window['_ResourceCosts_'].get_list_values()
     action_data['Action Type'] = values['_ACTIONTYPE_']
     action_data['Effect'] = values['_EFFECT_']
     action_data['Attack Bonus'] = values['_ATTACKBONUS_']
@@ -430,7 +446,7 @@ while True:
         selected_creature_name = selected_creature[0]
         filename = os.path.join(os.getcwd(), 'Creatures', f'{selected_creature_name}.json')
         if os.path.exists(filename):
-            creature_data = load_creature(filename)
+            creature_data = load(filename)
         else:
             creature_data = base_creature_data
         update_creature(creature_data)
@@ -439,15 +455,15 @@ while True:
         number = values['_ResourceNumber_']
         rtype = values['_ResourceType_']
         resource_data = window['_ResourcesList_'].get_list_values()
-        resource_data.append(f'Name: {name}, Number: {number}, Type: {rtype}')
+        resource_data.append({'Name': name, 'Number': number, 'Type': rtype})
         window['_ResourcesList_'].update(resource_data)
     elif event == 'Add Action':
         filename = sg.popup_get_file('Load Action Data', file_types=(('JSON Files', '*.json'),))
         if filename:
-            action_data = load_action(filename)
+            action_data = load(filename)
             creature_data['Actions'].append(action_data)
             window['_ActionList_'].update(creature_data['Actions'])
-    elif event == 'Add Creature':
+    elif event == 'Create New Creature':
         window['_CREATURES_'].update(values=get_creatures_list() + ['New Creature'])
         window['_CREATURES_'].set_value('New Creature')
         creature_data = base_creature_data
@@ -459,14 +475,14 @@ while True:
         filename = sg.popup_get_file('Save Creature Data', save_as=True, default_extension='.json', file_types=(('JSON Files', '*.json'),))
         
         if filename:
-            save_creature(filename)
+            save(filename, creature_data)
             sg.popup(f'Creature data saved to {filename}', title='Save Successful')         
     elif event == 'Load Creature':
         # Show a file open dialog and get the chosen filename
         filename = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),))
         
         if filename:
-            creature_data = load_creature(filename)
+            creature_data = load(filename)
             update_creature(creature_data)
             sg.popup(f'Creature data loaded from {filename}', title='Load Successful')
     
@@ -478,11 +494,11 @@ while True:
         filename = os.path.join(os.getcwd(), 'Conditions', f'{selected_condition_name}.json')
         print(filename)
         if os.path.exists(filename):
-            condition_data = load_condition(filename)
+            condition_data = load(filename)
         else:
             condition_data = base_condition_data
         update_condition(condition_data)
-    elif event == 'Add Condition':
+    elif event == 'Create New Condition':
         window['_CONDITIONS_'].update(values=get_conditions_list() + ['New Condition'])
         window['_CONDITIONS_'].set_value('New Condition')
         condition_data = base_condition_data
@@ -494,14 +510,14 @@ while True:
         filename = sg.popup_get_file('Save Condition Data', save_as=True, default_extension='.json', file_types=(('JSON Files', '*.json'),))
         
         if filename:
-            save_condition(filename)
+            save(filename, condition_data)
             sg.popup(f'Condition data saved to {filename}', title='Save Successful')         
     elif event == 'Load Condition':
         # Show a file open dialog and get the chosen filename
         filename = sg.popup_get_file('Load Condition Data', file_types=(('JSON Files', '*.json'),))
         
         if filename:
-            condition_data = load_condition(filename)
+            condition_data = load(filename)
             update_condition(condition_data)
             sg.popup(f'Condition data loaded from {filename}', title='Load Successful')
     
@@ -512,7 +528,7 @@ while True:
         filename = os.path.join(os.getcwd(), 'Actions', f'{selected_action_name}.json')
         print(filename)
         if os.path.exists(filename):
-            action_data = load_action(filename)
+            action_data = load(filename)
         else:
             action_data = base_action_data
         update_action(action_data)
@@ -528,24 +544,31 @@ while True:
     elif event == '_EFFECT_':
         window['_DAMAGEROLL_'].update(visible=values['_EFFECT_'] == 'Damage')
         window['_DAMAGETYPE_'].update(visible=values['_EFFECT_'] == 'Damage')
-    elif event == 'Add Action':
+    elif event == 'Add Cost':
+        name = values['_ACTIONRESOURCENAME_']
+        number = values['_ACTIONRESOURCECOST_']
+        resource_data = window['_ResourceCosts_'].get_list_values()
+        resource_data.append({'Name': name, 'Number': number})
+        window['_ResourceCosts_'].update(resource_data)
+    elif event == 'Create New Action':
         window['_ACTIONS_'].update(values=get_actions_list() + ['New Action'])
         window['_ACTIONS_'].set_value('New Action')
         action_data = base_action_data
         update_action(action_data)
     elif event == 'Save Action':
+        print(values)
         update_action_data(values)
 
         filename = sg.popup_get_file('Save Action Data', save_as=True, default_extension='.json', file_types=(('JSON Files', '*.json'),))
         
         if filename:
-            save_action(filename)
+            save(filename, action_data)
             sg.popup(f'Action data saved to {filename}', title='Save Successful')         
     elif event == 'Load Action':
         filename = sg.popup_get_file('Load Action Data', file_types=(('JSON Files', '*.json'),))
         
         if filename:
-            action_data = load_action(filename)
+            action_data = load(filename)
             update_action(action_data)
             sg.popup(f'Action data loaded from {filename}', title='Load Successful')
     
@@ -553,13 +576,13 @@ while True:
     elif event == 'Add Creature 1':
         filename = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),))
         if filename:
-            creature_data = load_creature(filename)
+            creature_data = load(filename)
             simulation_data['Team1'].append(creature_data)
             window['_TEAM1_'].update(simulation_data['Team1'])
     elif event == 'Add Creature 2':
         filename = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),))
         if filename:
-            creature_data = load_creature(filename)
+            creature_data = load(filename)
             simulation_data['Team2'].append(creature_data)
             window['_TEAM2_'].update(simulation_data['Team2'])
     elif event == 'Simulate':
@@ -575,7 +598,7 @@ while True:
         window.Element('_CONDITIONS_').Update(new_values)
         search = values['_INPUTACTION_']
         new_values = [x for x in get_actions_list() if search.lower() in x.lower()]
-        window.Element('_CONDITIONS_').Update(new_values)
+        window.Element('_ACTIONS_').Update(new_values)
     else:
         window.Element('_CREATURES_').Update(get_creatures_list())
         window.Element('_CONDITIONS_').Update(get_conditions_list())
