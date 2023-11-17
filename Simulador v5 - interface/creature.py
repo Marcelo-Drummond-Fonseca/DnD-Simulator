@@ -131,29 +131,27 @@ class Creature:
     
     def choose_single_action(self, action_type):
         possible_actions = []
-        for actions in action_type:
+        for action in action_type:
             possible = True
             necessary_resources = {}
-            for action in actions:
-                if action.resource_cost:
-                    if action.resource_cost[0] in necessary_resources:
-                        necessary_resources[action.resource_cost[0]] += action.resource_cost[1]
-                    else:
-                        necessary_resources[action.resource_cost[0]] = action.resource_cost[1]
+            if action.resource_cost:
+                if action.resource_cost[0] in necessary_resources:
+                    necessary_resources[action.resource_cost[0]] += action.resource_cost[1]
+                else:
+                    necessary_resources[action.resource_cost[0]] = action.resource_cost[1]
             for resource_type, resource_amount in necessary_resources.items():
                 if self.current_resources[resource_type] < resource_amount:
                     possible = False
             if possible:
-                possible_actions.append(actions)
+                possible_actions.append(action)
         if possible_actions:
-            actions = choice(possible_actions)
-            for action in actions:
-                #target = choice(self.simulator.get_enemy_team(self.team))
-                targets = action.get_targets(self)
-                print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
-                if action.resource_cost:
-                    self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
-                action.act(targets, self)
+            action = choice(possible_actions)
+            #target = choice(self.simulator.get_enemy_team(self.team))
+            targets = action.get_targets(self)
+            print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
+            if action.resource_cost:
+                self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
+            action.act(targets, self)
         
     
     def start_of_turn(self):

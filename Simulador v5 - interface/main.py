@@ -11,28 +11,80 @@ sg.theme('SystemDefaultForReal')
 ttk_style = 'vista'
 simulator = Simulator()
 
+damage_types = ['Acid', 'Bludgeoning', 'Bludgeoning (Magical)', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Piercing (Magical)', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Slashing (Magical)', 'Thunder']
+damage_multiplier = {'Resistance': 0.5, 'Immunity': 0, 'Vulnerability': 2}
+
+#Function to format conditions from the interface to the simulator.
+def format_condition(condition):
+    effectslist = []
+    if condition['Attack Modifier'] or condition['Attack Advantage'] or condition['Damage Modifier']:
+        if condition['Attack Advantage'] == 'Advantage': advantage = 1
+        elif condition['Attack Advantage'] == 'Disadvantage': advantage = -1
+        else: advantage = 0
+        print(condition['Name'], advantage)
+        effectslist.append(Modified_Attack(int(condition['Attack Modifier']), int(condition['Damage Modifier']), advantage))
+    if condition['AC Modifier'] or condition['Defense Advantage'] or condition['Saves Modifier'] or condition['Saves Advantage']:
+        if condition['Defense Advantage'] == 'Advantage': advantage = 1
+        elif condition['Defense Advantage'] == 'Disadvantage': advantage = -1
+        else: advantage = 0
+        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), condition['Saves Advantage']))
+    if condition['Action Modifier'] or condition['Bonus Action Modifier'] or condition['Reaction Modifier']:
+        effectslist.append(Modified_Economy(int(condition['Action Modifier']), int(condition['Bonus Action Modifier']), int(condition['Reaction Modifier'])))
+    return Condition(condition['Name'], condition['End Type'] + ' ' + condition['End On'], int(condition['Duration']), effectslist)
+        
+def format_action(action):
+    if action['Effect'] == 'Damage':
+        damage_roll = re.split('[d\+]', action['Damage Roll'])
+        effect = Damage(int(damage_roll[0]), int(damage_roll[1]), int(damage_roll[2]), action['Damage Type'])
+    elif action['Effect'] == 'Healing':
+        healing_roll = re.split('[d\+]', action['Healing Roll'])
+        effect = Healing(int(healing_roll[0]), int(healing_roll[1]), int(healing_roll[2]))
+    elif action['Effect'] == 'Apply Condition':
+        for condition in action['Conditions']:
+            formatted_condition = format_condition(condition)
+            effect = Apply_Condition(formatted_condition)
+    if action['Action Type'] == 'Attack Roll':
+        attempt = Attack_Roll(int(action['Attack Bonus']), effect)
+    elif action['Action Type'] == 'Saving Throw':
+        attempt = Saving_Throw(int(action['Save DC']), action['Save Type'], True, effect)
+    elif action['Action Type'] == 'Auto Apply':
+        attempt = Auto_Apply(effect)
+    resourcecost = None
+    for resource in action['Resource Cost']:
+        resourcecost = [resource['Name'], int(resource['Number'])]
+    return Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt, resourcecost)
+
 #Function to format creatures from the interface to the simulator
 def format_creature(creature):
     actionlist = []
+    bonusactionlist = []
+    freeactionlist = []
     for action in creature['Actions']:
-        if action['Effect'] == 'Damage':
-            damage_roll = re.split('[d\+]', action['Damage Roll'])
-            effect = Damage(int(damage_roll[0]), int(damage_roll[1]), int(damage_roll[2]), action['Damage Type'])
-        if action['Action Type'] == 'Attack Roll':
-            attempt = Attack_Roll(int(action['Attack Bonus']), effect)
-        resourcecost = None
-        for resource in action['Resource Cost']:
-            resourcecost = [resource['Name'], int(resource['Number'])]
-        formatted_action = Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt, resourcecost)
-        actionlist.append(formatted_action)
+        formatted_action = format_action(action)
+        if action['Action Speed'] == 'Action':
+            actionlist.append(formatted_action)
+        elif action['Action Speed'] == 'Bonus Action':
+            bonusactionlist.append(formatted_action)
+        elif action['Action Speed'] == 'Free Action':
+            freeactionlist.append(formatted_action)
     formatted_creature = Creature(creature['Name'], int(creature['HP']), int(creature['AC']), list(map(int, creature['Saving Throws'])), int(creature['Iniciative']))
     for resource in creature['Resources']:
         formatted_creature.add_resource(resource['Name'], int(resource['Number']), resource['Type'])
     for formatted_action in actionlist:
         formatted_creature.add_action(formatted_action)
+    for formatted_action in bonusactionlist:
+        formatted_creature.add_bonus_action(formatted_action)
+    for formatted_action in freeactionlist:
+        formatted_creature.add_free_action(formatted_action)
     #Add combos here later
-    for formatted_action in actionlist:
-        formatted_creature.add_combo([formatted_action.name])
+    if creature['Combos']:
+        for combo in creature['Combos']:
+            formatted_creature.add_combo(combo.split(','))
+    else:
+        for formatted_action in actionlist:
+            formatted_creature.add_combo([formatted_action.name])
+    for resistance in creature['Resistances']:
+        formatted_creature.add_damage_type_multiplier(resistance[0],damage_multiplier[resistance[1]])
     return formatted_creature
 
 #Function to run the simulations
@@ -40,32 +92,35 @@ def run_simulation(team1, team2, iterations):
     #Formatting creatures
     formatted_team1 = []
     formatted_team2 = []
+    winrate1 = 0
+    winrate2 = 0
     for creature in team1:
         formatted_team1.append(format_creature(creature))
     for creature in team2:
         formatted_team2.append(format_creature(creature))
-    simulator.start_simulation(formatted_team1,formatted_team2)
+    for i in range(iterations):
+        for creature in formatted_team1:
+            creature.full_restore()
+        for creature in formatted_team2:
+            creature.full_restore()
+        winner = simulator.start_simulation(formatted_team1.copy(),formatted_team2.copy())
+        if winner == 1:
+            winrate1 += 1
+        elif winner == 2:
+            winrate2 += 1
+    return 'Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
+    
 
 # Function to save to file
 def save(filename, data):
     with open(filename, 'w') as file:
         json.dump(data, file)
-    
+
+#Function to load from file
 def load(filename):
     with open(filename, 'r') as file:
         return json.load(file)
         
-
-
-# Function to save creature data to a file
-def save_creature(filename):
-    with open(filename, 'w') as file:
-        json.dump(creature_data, file)
-
-# Function to load creature data from a file
-def load_creature(filename):
-    with open(filename, 'r') as file:
-        return json.load(file)
 
 #Function to get the names of all creatures in the "Creatures" folder.        
 def get_creatures_list():
@@ -78,16 +133,6 @@ def get_creatures_list():
         if file.endswith('.json'):
             creatures.append(file[:-5])  # Remove .json extension
     return creatures
-
-# Function to save condition data to a file
-def save_condition(filename):
-    with open(filename, 'w') as file:
-        json.dump(condition_data, file)
-
-# Function to load condition data from a file
-def load_condition(filename):
-    with open(filename, 'r') as file:
-        return json.load(file)
     
 #Function to get the names of all conditions in the "Conditions" folder.        
 def get_conditions_list():
@@ -100,16 +145,6 @@ def get_conditions_list():
         if file.endswith('.json'):
             conditions.append(file[:-5])  # Remove .json extension
     return conditions
-
-# Function to save action data to a file
-def save_action(filename):
-    with open(filename, 'w') as file:
-        json.dump(action_data, file)
-
-# Function to load action data from a file
-def load_action(filename):
-    with open(filename, 'r') as file:
-        return json.load(file)
 
 # Function to get the names of all actions in the "Actions" folder
 def get_actions_list():
@@ -146,6 +181,14 @@ layout_creature_stats = [
     [sg.Text("Actions")],
     [sg.Button('Add Action', use_ttk_buttons=True)],
     [sg.Listbox(values=[], size=(50, 5), key='_ActionList_')],
+    [sg.Text("Combos")],
+    [sg.Input(size=(30,1), key='_COMBONAME_', justification='left', enable_events=True)],
+    [sg.Button('Add Combo', use_ttk_buttons=True)],
+    [sg.Listbox(values=[], size=(50, 5), key='_ComboList_')],
+    [sg.Text("Resistances/Immunities/Vulnerabilities")],
+    [sg.DropDown(values=damage_types, key='_DAMAGETYPERESISTANCE_'), sg.Combo(values=['Resistance','Immunity','Vulnerability'], key='_RESISTANCETYPE_')],
+    [sg.Button('Add Resistance/Vulnerability/Immunity', use_ttk_buttons=True)],
+    [sg.Listbox(values=[], size=(50, 5), key='_ResistanceList_')],
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Creature')]
 ]
@@ -163,8 +206,8 @@ layout_creatures = [
 layout_conditions_stats = [
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CONDITIONNAME_', justification='left', enable_events=True)],
     [sg.Text("Duration", size=(8,1)), sg.DropDown(values=[str(i) for i in range(1, 11)], size=(5,1), key='_DURATION_'), 
-    sg.Text('Turns, ends on', size=(14,1)), sg.DropDown(values=['start of','end of'], size=(8,1), key='_ENDTYPE_'), 
-    sg.DropDown(values=['caster turn','target turn'], size=(11,1), key='_ENDON_')],
+    sg.Text('Turns, ends on', size=(14,1)), sg.DropDown(values=['Start Of','End Of'], size=(8,1), key='_ENDTYPE_'), 
+    sg.DropDown(values=['Caster Turn','Target Turn'], size=(11,1), key='_ENDON_')],
     [sg.Text("Attack modifier", size=(15,1)), sg.Input(size=(3,1), key='_ATTACKMOD_'), 
     sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ATTACKADVANTAGE_'),
     sg.Text("Damage modifier", size=(15,1)), sg.Input(size=(3,1), key='_DAMAGEMOD_')],
@@ -198,16 +241,19 @@ layout_conditions = [
     
 layout_action_stats = [
     [sg.Text("Name", size=(8, 1)), sg.Input(size=(50, 1), key='_ACTIONNAME_', justification='left', enable_events=True)],
+    [sg.Text("Action Speed", size=(12,1)), sg.Combo(['Action', 'Bonus Action', 'Free Action'], size=(12, 1), key='_ACTIONSPEED_')],
     [sg.Text("Number of Targets", size=(16, 1)), sg.Input(size=(2, 1), key='_NUMTARGETS_', justification='left', enable_events=True),
     sg.Text("Target Type", size=(11, 1)), sg.Combo(['Self', 'Enemy', 'Ally'], size=(6, 1), key='_TARGETTYPE_')],
     [sg.Text("Action Type", size=(8, 1)), sg.Combo(['Attack Roll', 'Saving Throw', 'Auto Apply'], size=(12, 1), key='_ACTIONTYPE_', enable_events=True)],
-    [sg.Text("Effect", size=(8, 1)), sg.Combo(['Damage', 'Healing', 'Apply Condition'], size=(12, 1), key='_EFFECT_', enable_events=True)],
-    [sg.Text("Properties")],
     [sg.Text("Attack Bonus", size=(12, 1)), sg.Input(size=(2, 1), key='_ATTACKBONUS_', justification='left', enable_events=True, visible=False)],
     [sg.Text("Save DC", size=(8, 1)), sg.Input(size=(2, 1), key='_SAVEDC_', justification='left', enable_events=True, visible=False)],
     [sg.Text("Save Type", size=(8, 1)), sg.Combo(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'], size=(5, 1), key='_SAVETYPE_', visible=False)],
+    [sg.Text("Effect", size=(8, 1)), sg.Combo(['Damage', 'Healing', 'Apply Condition'], size=(12, 1), key='_EFFECT_', enable_events=True)],
     [sg.Text("Damage (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_DAMAGEROLL_', justification='left', enable_events=True, visible=False)],
-    [sg.Text("Damage Type", size=(11, 1)), sg.Input(size=(15, 1), key='_DAMAGETYPE_', justification='left', enable_events=True, visible=False)],
+    [sg.Text("Damage Type", size=(11, 1)), sg.Combo(values=damage_types, key='_DAMAGETYPE_', enable_events=True, visible=False)],
+    [sg.Text("Healing (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_HEALINGROLL_', justification='left', enable_events=True, visible=False)],
+    [sg.Button('Add Condition', use_ttk_buttons=True, visible=False, key='_ADDCONDITION_')],
+    [sg.Listbox(values=[], size=(50, 5), key='_ConditionList_')],
     [sg.Text("Resource Name", size=(16, 1)), sg.Input(size=(20, 1), key='_ACTIONRESOURCENAME_', justification='left', enable_events=True),
     sg.Text("Resource Cost", size=(16, 1)), sg.Input(size=(5, 1), key='_ACTIONRESOURCECOST_', justification='left', enable_events=True)],
     [sg.Button('Add Cost', use_ttk_buttons=True)],
@@ -229,8 +275,9 @@ layout_actions = [
 
 layout_simulator = [
     [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2')],
-    [sg.Listbox(values=[], size=(20, 30), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 30), key='_TEAM2_', enable_events=True)],
-    [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')]
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True)],
+    [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
+    [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')]
 ]
 
 # Create the main window layout with the menu
@@ -242,7 +289,7 @@ layout_main = [
      sg.Column(layout_simulator, key='_SIMULATOR_', visible=False)]
 ]
 
-window = sg.Window('Menu Example', layout_main, ttk_theme=ttk_style, size=(800, 600))  # Adjusted window size
+window = sg.Window('Menu Example', layout_main, ttk_theme=ttk_style, size=(800, 1000))  # Adjusted window size
 
 base_creature_data = {
     'Name': 'New Creature',
@@ -251,7 +298,9 @@ base_creature_data = {
     'Iniciative': 0,
     'Saving Throws': [0, 0, 0, 0, 0, 0],
     'Resources': [],
-    'Actions': []
+    'Actions': [],
+    'Combos': [],
+    'Resistances': []
 }
 
 creature_data = {
@@ -261,7 +310,9 @@ creature_data = {
     'Iniciative': None,
     'Saving Throws': [None, None, None, None, None, None],
     'Resources': [],
-    'Actions': []
+    'Actions': [],
+    'Combos': [],
+    'Resistances': []
 }
 
 def update_creature(creature_data):
@@ -273,6 +324,8 @@ def update_creature(creature_data):
         window[f'_ST{i}_'].update(creature_data['Saving Throws'][i-1])
     window['_ResourcesList_'].update(creature_data['Resources'])
     window['_ActionList_'].update(creature_data['Actions'])
+    window['_ComboList_'].update(creature_data['Combos'])
+    window['_ResistanceList_'].update(creature_data['Resistances'])
 
 def update_creature_data(values):
     creature_data['Name'] = values['_CREATURENAME_']
@@ -282,6 +335,8 @@ def update_creature_data(values):
     creature_data['Saving Throws'] = [values[f'_ST{i}_'] for i in range(1, 7)]
     creature_data['Resources'] = window['_ResourcesList_'].get_list_values()
     creature_data['Actions'] = window['_ActionList_'].get_list_values()
+    creature_data['Combos'] = window['_ComboList_'].get_list_values()
+    creature_data['Resistances'] = window['_ResistanceList_'].get_list_values()
     
 base_condition_data = {
     'Name': 'New Condition',
@@ -352,6 +407,7 @@ def update_condition_data(values):
 
 base_action_data = {
     'Name': 'New Action',
+    'Action Speed': 'Action',
     'Number of Targets': 1,
     'Target Type': 'Self',
     'Resource Cost': [],
@@ -361,11 +417,14 @@ base_action_data = {
     'Save DC': 10,
     'Save Type': 'STR',
     'Damage Roll': '1d6+0',
-    'Damage Type': 'Bludgeoning'
+    'Healing Roll': '1d6+0',
+    'Damage Type': 'Bludgeoning',
+    'Conditions': []
 }
 
 action_data = {
     'Name': None,
+    'Action Speed': None,
     'Number of Targets': None,
     'Target Type': None,
     'Resource Cost': [],
@@ -375,11 +434,14 @@ action_data = {
     'Save DC': None,
     'Save Type': None,
     'Damage Roll': None,
-    'Damage Type': None
+    'Healing Roll': None,
+    'Damage Type': None,
+    'Conditions': []
 }
 
 def update_action(action_data):
     window['_ACTIONNAME_'].update(action_data['Name'])
+    window['_ACTIONSPEED_'].update(action_data['Action Speed'])
     window['_NUMTARGETS_'].update(action_data['Number of Targets'])
     window['_TARGETTYPE_'].update(action_data['Target Type'])
     window['_ResourceCosts_'].update(action_data['Resource Cost'])
@@ -390,9 +452,12 @@ def update_action(action_data):
     window['_SAVETYPE_'].update(action_data['Save Type'])
     window['_DAMAGEROLL_'].update(action_data['Damage Roll'])
     window['_DAMAGETYPE_'].update(action_data['Damage Type'])
+    window['_HEALINGROLL_'].update(action_data['Healing Roll'])
+    window['_ConditionList_'].update(action_data['Conditions'])
 
 def update_action_data(values):
     action_data['Name'] = values['_ACTIONNAME_']
+    action_data['Action Speed'] = values['_ACTIONSPEED_']
     action_data['Number of Targets'] = values['_NUMTARGETS_']
     action_data['Target Type'] = values['_TARGETTYPE_']
     action_data['Resource Cost'] = window['_ResourceCosts_'].get_list_values()
@@ -403,11 +468,13 @@ def update_action_data(values):
     action_data['Save Type'] = values['_SAVETYPE_']
     action_data['Damage Roll'] = values['_DAMAGEROLL_']
     action_data['Damage Type'] = values['_DAMAGETYPE_']
+    action_data['Healing Roll'] = values['_HEALINGROLL_']
+    action_data['Conditions'] = window['_ConditionList_'].get_list_values()
 
 simulation_data = {
     'Team1': [],
     'Team2': [],
-    'Repetitions': 1
+    'Repetitions': 100
 }
 
 
@@ -463,6 +530,14 @@ while True:
             action_data = load(filename)
             creature_data['Actions'].append(action_data)
             window['_ActionList_'].update(creature_data['Actions'])
+    elif event == 'Add Combo':
+        combo_data = window['_ComboList_'].get_list_values()
+        combo_data.append(values['_COMBONAME_'])
+        window['_ComboList_'].update(combo_data)
+    elif event == 'Add Resistance/Vulnerability/Immunity':
+        resistance_data = window['_ResistanceList_'].get_list_values()
+        resistance_data.append([values['_DAMAGETYPERESISTANCE_'], values['_RESISTANCETYPE_']])
+        window['_ResistanceList_'].update(resistance_data)
     elif event == 'Create New Creature':
         window['_CREATURES_'].update(values=get_creatures_list() + ['New Creature'])
         window['_CREATURES_'].set_value('New Creature')
@@ -537,6 +612,9 @@ while True:
         window['_SAVETYPE_'].update(visible=action_data['Action Type'] == 'Saving Throw')
         window['_DAMAGEROLL_'].update(visible=action_data['Effect'] == 'Damage')
         window['_DAMAGETYPE_'].update(visible=action_data['Effect'] == 'Damage')
+        window['_HEALINGROLL_'].update(visible=action_data['Effect'] == 'Healing')
+        window['_ADDCONDITION_'].update(visible=action_data['Effect'] == 'Apply Condition')
+        window['_ConditionList_'].update(visible=action_data['Effect'] == 'Apply Condition')
     elif event == '_ACTIONTYPE_':
         window['_ATTACKBONUS_'].update(visible=values['_ACTIONTYPE_'] == 'Attack Roll')
         window['_SAVEDC_'].update(visible=values['_ACTIONTYPE_'] == 'Saving Throw')
@@ -544,6 +622,15 @@ while True:
     elif event == '_EFFECT_':
         window['_DAMAGEROLL_'].update(visible=values['_EFFECT_'] == 'Damage')
         window['_DAMAGETYPE_'].update(visible=values['_EFFECT_'] == 'Damage')
+        window['_HEALINGROLL_'].update(visible=values['_EFFECT_'] == 'Healing')
+        window['_ADDCONDITION_'].update(visible=values['_EFFECT_'] == 'Apply Condition')
+        window['_ConditionList_'].update(visible=values['_EFFECT_'] == 'Apply Condition')
+    elif event == '_ADDCONDITION_':
+        filename = sg.popup_get_file('Load Condition Data', file_types=(('JSON Files', '*.json'),))
+        if filename:
+            condition_data = load(filename)
+            action_data['Conditions'].append(condition_data)
+            window['_ConditionList_'].update(action_data['Conditions'])
     elif event == 'Add Cost':
         name = values['_ACTIONRESOURCENAME_']
         number = values['_ACTIONRESOURCECOST_']
@@ -586,7 +673,8 @@ while True:
             simulation_data['Team2'].append(creature_data)
             window['_TEAM2_'].update(simulation_data['Team2'])
     elif event == 'Simulate':
-        run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Repetitions'])
+        winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Repetitions'])
+        window['_SIMULATIONRESULTS_'].update(winratetext)
     
     #Search Events
     elif values['_INPUTCREATURE_'] != '' or values['_INPUTCONDITION_'] != '' or values['_INPUTACTION_'] != '' :

@@ -21,17 +21,17 @@ class Condition:
             effect.apply_effect(target)
         
     def notify_SoT(self, isCaster = True):
-        if self.end_condition == "Start of Caster Turn" and isCaster:
+        if self.end_condition == "Start Of Caster Turn" and isCaster:
             self.duration -= 1
-        elif self.end_condition == "Start of Target Turn" and not isCaster:
+        elif self.end_condition == "Start Of Target Turn" and not isCaster:
             self.duration -= 1
         if self.duration <= 0:
             self.remove_condition()
             
     def notify_EoT(self, isCaster = True):
-        if self.end_condition == "End of Caster Turn" and isCaster:
+        if self.end_condition == "End Of Caster Turn" and isCaster:
             self.duration -= 1
-        elif self.end_condition == "End of Target Turn" and not isCaster:
+        elif self.end_condition == "End Of Target Turn" and not isCaster:
             self.duration -= 1
         if self.duration <= 0:
             self.remove_condition()
@@ -58,35 +58,33 @@ class Modified_Attack(Condition_Effect):
     def __init__(self, attack_bonus = 0, damage_bonus = 0, advantage = 0):
         self.attack_bonus = attack_bonus
         self.damage_bonus = damage_bonus
-        self.advantage = 0
+        self.advantage = advantage
         
     def apply_effect(self, target):
-        for actions in target.actions:
-            for action in actions:
-                if isinstance(action.attempt, act.Attack_Roll):
-                    action.attempt.attack_bonus += self.attack_bonus
-                    if self.advantage == 1:
-                        action.attempt.advantage += 1
-                    elif self.advantage == -1:
-                        action.attempt.disadvantage += 1
-                    if isinstance(action.attempt.effect, act.Damage):
-                        action.attempt.effect.damage_modifier += self.damage_bonus
+        for action in target.actions:
+            if isinstance(action.attempt, act.Attack_Roll):
+                action.attempt.attack_bonus += self.attack_bonus
+                if self.advantage == 1:
+                    action.attempt.advantage += 1
+                elif self.advantage == -1:
+                    action.attempt.disadvantage += 1
+                if isinstance(action.attempt.effect, act.Damage):
+                    action.attempt.effect.damage_modifier += self.damage_bonus
                     
     def remove_effect(self,target):
-        for actions in target.actions:
-            for action in actions:
-                if isinstance(action.attempt, act.Attack_Roll):
-                    action.attempt.attack_bonus -= self.attack_bonus
-                    if self.advantage == 1:
-                        action.attempt.advantage -= 1
-                    elif self.advantage == -1:
-                        action.attempt.disadvantage -= 1
-                    if isinstance(action.attempt.effect, act.Damage):
-                        action.attempt.effect.damage_modifier -= self.damage_bonus
+        for action in target.actions:
+            if isinstance(action.attempt, act.Attack_Roll):
+                action.attempt.attack_bonus -= self.attack_bonus
+                if self.advantage == 1:
+                    action.attempt.advantage -= 1
+                elif self.advantage == -1:
+                    action.attempt.disadvantage -= 1
+                if isinstance(action.attempt.effect, act.Damage):
+                    action.attempt.effect.damage_modifier -= self.damage_bonus
 
 class Modified_Defense(Condition_Effect):
 
-    def __init__(self, AC_bonus = 0, save_bonus = [0,0,0,0,0,0], ac_advantage = 0, save_advantage = [0,0,0,0,0,0], damage_type_multipliers = {}, damage_type_reductions = {}):
+    def __init__(self, AC_bonus = 0, ac_advantage = 0, save_bonus = [0,0,0,0,0,0], save_advantage = [0,0,0,0,0,0], damage_type_multipliers = {}, damage_type_reductions = {}):
         self.AC_bonus = AC_bonus
         self.save_bonus = save_bonus
         self.ac_advantage = ac_advantage

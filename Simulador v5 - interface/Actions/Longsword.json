@@ -1,0 +1,1 @@
+{"Name": "Longsword", "Action Speed": "Action", "Number of Targets": "1", "Target Type": "Enemy", "Resource Cost": [], "Action Type": "Attack Roll", "Effect": "Damage", "Attack Bonus": "5", "Save DC": "10", "Save Type": "STR", "Damage Roll": "1d8+5", "Healing Roll": "1d6+0", "Damage Type": "Slashing", "Conditions": []}
