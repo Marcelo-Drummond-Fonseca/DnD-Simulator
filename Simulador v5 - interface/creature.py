@@ -77,6 +77,10 @@ class Creature:
             self.current_resources[resource_type] = self.max_resources[resource_type]
         for condition in self.conditions:
             condition.remove_condition()
+        for condition in self.applied_conditions['Concentration']:
+            condition.remove_condition()
+        for condition in self.applied_conditions['Non-Concentration']:
+            condition.remove_condition()
     
     def add_simulator(self, simulator, team):
         self.simulator = simulator
@@ -208,15 +212,18 @@ class Creature:
             return False
 
     
-    def take_damage(self, damage, damage_type):
-        if self.damage_type_multipliers.get(damage_type):
-            print('dano modificado de', damage, 'para', floor(damage*self.damage_type_multipliers.get(damage_type)), 'devido a resistencias/fraquezas/imunidades')
-            damage = floor(damage*self.damage_type_multipliers.get(damage_type))
-        self.HP -= damage
-        print(self.name, 'toma', damage, 'de dano! HP reduzido para', self.HP)
-        if not self.is_alive():
-            print(self.name, 'morreu')
-            self.simulator.notify_death(self,self.team)
+    def take_damage(self, total_damage):
+        for damage_tuple in total_damage:
+            damage = damage_tuple[0]
+            damage_type = damage_tuple[1]
+            if self.damage_type_multipliers.get(damage_type):
+                print('dano modificado de', damage, 'para', floor(damage*self.damage_type_multipliers.get(damage_type)), 'devido a resistencias/fraquezas/imunidades')
+                damage = floor(damage*self.damage_type_multipliers.get(damage_type))
+            self.HP -= damage
+            print(self.name, 'toma', damage, 'de dano! HP reduzido para', self.HP)
+            if not self.is_alive():
+                print(self.name, 'morreu')
+                self.simulator.notify_death(self,self.team)
         
     def recover_hit_points(self,amount):
         self.HP += amount

@@ -55,10 +55,11 @@ class Condition_Effect:
         
 class Modified_Attack(Condition_Effect):
 
-    def __init__(self, attack_bonus = 0, damage_bonus = 0, advantage = 0):
+    def __init__(self, attack_bonus = 0, damage_bonus = 0, advantage = 0, extra_damage = []):
         self.attack_bonus = attack_bonus
         self.damage_bonus = damage_bonus
         self.advantage = advantage
+        self.extra_damage = extra_damage
         
     def apply_effect(self, target):
         for action in target.actions:
@@ -69,7 +70,9 @@ class Modified_Attack(Condition_Effect):
                 elif self.advantage == -1:
                     action.attempt.disadvantage += 1
                 if isinstance(action.attempt.effect, act.Damage):
-                    action.attempt.effect.damage_modifier += self.damage_bonus
+                    action.attempt.effect.add_damage_modifier(self.damage_bonus)
+                    if self.extra_damage:
+                        action.attempt.effect.add_extra_damage(extra_damage)
                     
     def remove_effect(self,target):
         for action in target.actions:
@@ -80,7 +83,9 @@ class Modified_Attack(Condition_Effect):
                 elif self.advantage == -1:
                     action.attempt.disadvantage -= 1
                 if isinstance(action.attempt.effect, act.Damage):
-                    action.attempt.effect.damage_modifier -= self.damage_bonus
+                    action.attempt.effect.add_damage_modifier(-self.damage_bonus)
+                    if self.extra_damage:
+                        action.attempt.effect.remove_damage(extra_damage)
 
 class Modified_Defense(Condition_Effect):
 

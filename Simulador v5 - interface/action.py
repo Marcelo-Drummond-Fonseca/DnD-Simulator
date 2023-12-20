@@ -97,31 +97,48 @@ class Effect:
 
 class Damage(Effect):
     
-    def __init__(self, damage_die_amount, damage_die_size, damage_modifier, damage_type, follow_attack = None, follow_attempt = None, follow_effect = None):
-        self.damage_die_amount = damage_die_amount
-        self.damage_die_size = damage_die_size
-        self.damage_modifier = damage_modifier
-        self.damage_type = damage_type
+    def __init__(self, damage, follow_attack = None, follow_attempt = None, follow_effect = None):
+        self.damage = damage #damage tem a forma [quantidade de dados, tamanho de dados, modifier, tipo de dano]
         self.follow_attack = follow_attack
         self.follow_attempt = follow_attempt
         self.follow_effect = follow_effect
     
+    def add_damage_modifier(self, damage_modifier):
+        self.damage[0][2] += damage_modifier #Modifiers a mais afetam somente o primeiro dano
+        
+    def add_extra_damage(self, damage):
+        self.damage.append(damage)
+    
+    def remove_damage(self, damage):
+        self.damage.remove(damage)
+    
     def apply(self, targets, result_list, creature):
         if len(targets) > 1:
-            damage = diceroll(self.damage_die_amount,self.damage_die_size,self.damage_modifier)
-            half_damage = floor(damage/2)
+            total_damage = []
+            total_half_damage = []
+            for damage_parcel in self.damage:
+                damage = diceroll(self.damage_parcel[0],self.damage_parcel[1],self.damage_parcel[2])
+                half_damage = floor(damage/2)
+                total_damage.append([damage,damage_parcel[3]])
+                total_half_damage.append([half_damage,damage_parcel[3]])
             for i in range(len(targets)):
                 if result_list[i] == 1:
-                    targets[i].take_damage(damage,self.damage_type)
+                    targets[i].take_damage(total_damage)
                 elif result_list[i] == 0:
-                    targets[i].take_damage(half_damage,self.damage_type)
+                    targets[i].take_damage(total_half_damage)
         elif len(targets) == 1:
             if result_list[0] == 1:
-                damage = diceroll(self.damage_die_amount,self.damage_die_size,self.damage_modifier)
-                targets[0].take_damage(damage,self.damage_type)
+                total_damage = []
+                for damage_parcel in self.damage:
+                    damage = diceroll(damage_parcel[0],damage_parcel[1],damage_parcel[2])
+                    total_damage.append([damage,damage_parcel[3]])
+                targets[0].take_damage(total_damage)
             elif result_list[0] == 2:
-                crit_damage = diceroll(2*self.damage_die_amount,self.damage_die_size,self.damage_modifier)
-                targets[0].take_damage(crit_damage,self.damage_type)
+                total_crit_damage = []
+                for damage_parcel in self.damage:
+                    crit_damage = diceroll(damage_parcel[0]*2,damage_parcel[1],damage_parcel[2])
+                    total_crit_damage.append([crit_damage,damage_parcel[3]])
+                targets[0].take_damage(total_crit_damage)
         if self.follow_attack:
             self.follow_attack.act(targets)
         if self.follow_attempt:

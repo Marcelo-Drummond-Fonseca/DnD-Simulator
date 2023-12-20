@@ -1,0 +1,1 @@
+{"Name": "Test", "Action Speed": "Action", "Number of Targets": "1", "Target Type": "Self", "Resource Cost": [{"Name": "Test", "Number": "1"}], "Action Type": "Attack Roll", "Effect": "Damage", "Attack Bonus": "2", "Save DC": "10", "Save Type": "STR", "Damage": [{"Damage Roll": "1d4+0", "Damage Type": "Force"}], "Healing Roll": "1d6+0", "Conditions": []}
