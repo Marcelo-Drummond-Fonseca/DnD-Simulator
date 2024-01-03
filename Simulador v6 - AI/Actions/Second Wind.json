@@ -1,0 +1,1 @@
+{"Name": "Second Wind", "Action Speed": "Bonus Action", "Number of Targets": "1", "Target Type": "Self", "Resource Cost": [{"Name": "Second Wind", "Number": "1"}], "Action Type": "Auto Apply", "Effect": "Healing", "Attack Bonus": "0", "Save DC": "10", "Save Type": "STR", "Damage Roll": "1d6+0", "Healing Roll": "1d10+5", "Damage Type": "Bludgeoning", "Conditions": []}
