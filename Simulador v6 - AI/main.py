@@ -5,7 +5,7 @@ import re
 from simulator import Simulator
 from creature import Creature
 from action import Action, Attack_Roll, Auto_Apply, Saving_Throw, Damage, Healing, Apply_Condition
-from conditions import Condition, Condition_Effect, Modified_Attack, Modified_Defense, Modified_Economy
+from conditions import Condition, Condition_Effect, Modified_Attack, Modified_Defense, Modified_Economy, Effect_Over_Time
 
 sg.theme('SystemDefaultForReal')
 ttk_style = 'vista'
@@ -13,6 +13,21 @@ simulator = Simulator()
 
 damage_types = ['Acid', 'Bludgeoning', 'Bludgeoning (Magical)', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Piercing (Magical)', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Slashing (Magical)', 'Thunder']
 damage_multiplier = {'Resistance': 0.5, 'Immunity': 0, 'Vulnerability': 2}
+saves_dict = {
+    'STR': 0,
+    'DEX': 1,
+    'CON': 2,
+    'INT': 3,
+    'WIS': 4,
+    'CHA': 5
+}
+condition_end_possibilities = ['Start of Caster Turn',
+'End of Caster Turn',
+'Start of Target Turn',
+'End of Target Turn',
+'On Damage Taken',
+'Repeat Save on End of Target Turn',
+'Repeat Save on Damage Taken']
 
 opened_creature_action = None
 
@@ -20,48 +35,68 @@ opened_creature_action = None
 def format_condition(condition):
     effectslist = []
     print(condition['Name'])
-    if condition['Attack Modifier'] or condition['Attack Advantage'] or condition['Damage Modifier']:
+    if condition['Attack Modifier'] or condition['Attack Advantage'] or condition['Damage Modifier'] or condition['Crits On'] != 20 or condition['Extra Damage Roll']:
         if condition['Attack Advantage'] == 'Advantage': advantage = 1
         elif condition['Attack Advantage'] == 'Disadvantage': advantage = -1
         else: advantage = 0
-        effectslist.append(Modified_Attack(int(condition['Attack Modifier']), int(condition['Damage Modifier']), advantage))
-    if condition['AC Modifier'] or condition['Defense Advantage'] or condition['Saves Modifier'] or condition['Saves Advantage'] or condition['Resistances']:
+        extra_damage = []
+        if condition['Extra Damage Roll'] and condition['Extra Damage Type']:
+            extra_damage = list(map(int,re.split('[d\+]', condition['Extra Damage Roll']))).append(condition['Extra Damage Type'])
+        effectslist.append(Modified_Attack(int(condition['Attack Modifier']), int(condition['Damage Modifier']), advantage, extra_damage = extra_damage, crit_threshold = int(condition['Crits On'])))
+    if condition['AC Modifier'] or condition['Defense Advantage'] or condition['Saves Modifier'] or condition['Saves Advantage'] or condition['Resistances'] or condition['Auto Crit'] == "True":
         if condition['Defense Advantage'] == 'Advantage': advantage = 1
         elif condition['Defense Advantage'] == 'Disadvantage': advantage = -1
         else: advantage = 0
         resistances = {}
         for resistance in condition['Resistances']:
             resistances[resistance[0]] = damage_multiplier[resistance[1]]
-        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), condition['Saves Advantage'], resistances))
+        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), condition['Saves Advantage'], resistances, auto_crit = condition['Auto Crit'] == 'True'))
     if condition['Action Modifier'] or condition['Bonus Action Modifier'] or condition['Reaction Modifier']:
         effectslist.append(Modified_Economy(int(condition['Action Modifier']), int(condition['Bonus Action Modifier']), int(condition['Reaction Modifier'])))
-    return Condition(condition['Name'], condition['End Type'] + ' ' + condition['End On'], int(condition['Duration']), effectslist)
+    if condition['Damage Over Time Roll'] or condition['Healing Over Time']:
+        damage_over_time = []
+        healing_over_time = []
+        if condition['Healing Over Time']:
+            healing_over_time = list(map(int,re.split('[d\+]', condition['Healing Over Time'])))
+        if condition['Damage Over Time']:
+            damage_over_time = list(map(int,re.split('[d\+]', condition['Damage Over Time Roll']))).append(condition['Damage Over Time Type'])
+        effectslist.append(Effect_Over_Time(damage_over_time, healing_over_time))
+    if condition['Duration'] == 'Permanent':
+        return Condition(condition['Name'], 'Permanent', 9999, effectslist)
+    return Condition(condition['Name'], condition['End Type'], int(condition['Duration']), effectslist)
         
 def format_action(action):
+    effect = None
+    is_concentration = False
     if action['Effect'] == 'Damage':
         total_damage = []
         for damage in action['Damage']:
             damage_formatted = list(map(int,re.split('[d\+]', damage['Damage Roll'])))
             damage_formatted.append(damage['Damage Type'])
             total_damage.append(damage_formatted)
-        effect = Damage(total_damage)
+            formatted_actions = []
+            for follow_action in action['Follow Actions']:
+                formatted_actions.append(format_action(follow_action))
+        effect = Damage(total_damage, formatted_actions)
     elif action['Effect'] == 'Healing':
         healing_roll = re.split('[d\+]', action['Healing Roll'])
         effect = Healing(int(healing_roll[0]), int(healing_roll[1]), int(healing_roll[2]))
     elif action['Effect'] == 'Apply Condition':
         for condition in action['Conditions']:
             formatted_condition = format_condition(condition)
-            effect = Apply_Condition(formatted_condition)
+            effect = Apply_Condition(formatted_condition, action['Concentration'] == "True")
+            print(f'{action["Name"]}: {action["Concentration"]}')
+            is_concentration = action['Concentration'] == "True"
     if action['Action Type'] == 'Attack Roll':
         attempt = Attack_Roll(int(action['Attack Bonus']), effect)
     elif action['Action Type'] == 'Saving Throw':
-        attempt = Saving_Throw(int(action['Save DC']), action['Save Type'], True, effect)
+        attempt = Saving_Throw(int(action['Save DC']), saves_dict[action['Save Type']], True, effect)
     elif action['Action Type'] == 'Auto Apply':
         attempt = Auto_Apply(effect)
     resourcecost = None
     for resource in action['Resource Cost']:
         resourcecost = [resource['Name'], int(resource['Number'])]
-    return Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt, resourcecost)
+    return Action(action['Name'], int(action['Number of Targets']), action['Target Type'], attempt, resourcecost, is_concentration = is_concentration)
 
 #Function to format creatures from the interface to the simulator
 def format_creature(creature):
@@ -85,7 +120,11 @@ def format_creature(creature):
         formatted_creature.add_bonus_action(formatted_action)
     for formatted_action in freeactionlist:
         formatted_creature.add_free_action(formatted_action)
-    #Add combos here later
+    for condition in creature['Conditions']:
+        formatted_condition = format_condition(condition)
+        formatted_condition.end_condition = 'Permanent'
+        formatted_creature.add_permanent_condition(formatted_condition)
+        formatted_condition.add_caster_target(formatted_creature,formatted_creature)
     if creature['Combos']:
         for combo in creature['Combos']:
             formatted_creature.add_combo(combo.split(','))
@@ -103,6 +142,13 @@ def run_simulation(team1, team2, iterations):
     formatted_team2 = []
     winrate1 = 0
     winrate2 = 0
+    deaths_total = {}
+    uncertainty_total = 0
+    duration_total = 0
+    permanency_team1 = 0
+    permanency_team2 = 0
+    biggest_advantages = []
+    
     for creature in team1:
         formatted_team1.append(format_creature(creature))
     for creature in team2:
@@ -112,11 +158,97 @@ def run_simulation(team1, team2, iterations):
             creature.full_restore()
         for creature in formatted_team2:
             creature.full_restore()
-        winner = simulator.start_simulation(formatted_team1.copy(),formatted_team2.copy())
+        response = simulator.start_simulation(formatted_team1.copy(),formatted_team2.copy())
+        
+        
+        #Calculando métricas
+        scores = response['scores']
+        advantage_record = response['advantage_record']
+        advantage_record = [i for i in advantage_record if i != 0]
+        biggest_advantage = response['biggest_advantage']
+        deaths = response['deaths']
+        rounds = response['rounds']
+        
+        for death in deaths:
+            if death in deaths_total:
+                deaths_total[death] += 1
+            else:
+                deaths_total[death] = 1
+                
+        print(f'Mortes: {deaths}')
+        
+        #Incerteza
+        uncertainty = 0
+        for i in range(1, len(advantage_record)):
+            if advantage_record[i] != advantage_record[i - 1]:
+                uncertainty += 1
+        uncertainty = uncertainty/rounds
+        print(f'Incerteza: {uncertainty}')
+        uncertainty_total += uncertainty
+        
+        #Duração
+        duration_total += rounds
+        print(f'Duração: {rounds} rounds')
+        
+        #Permanencia
+        leader_rounds = 1
+        permanency_amount = 1
+        leader_id = advantage_record[0]
+        permanency_leader = leader_id
+
+        for i in range(1, len(advantage_record)):
+            if advantage_record[i] == advantage_record[i - 1]:
+                leader_rounds += 1
+            else:
+                if leader_rounds > permanency_amount:
+                    permanency_amount = leader_rounds
+                    permanency_leader = leader_id
+
+                leader_rounds = 1
+                leader_id = advantage_record[i]
+
+        # Ultimo líder
+        if leader_rounds > permanency_amount:
+            permanency_amount = leader_rounds
+            permanency_leader = leader_id
+        
+        if permanency_leader == 1:
+            permanency_team1 += permanency_amount/rounds
+        elif permanency_leader == 2:
+            permanency_team2 += permanency_amount/rounds
+        print(f'A maior permanência foi de {permanency_amount} rounds pelo time {permanency_leader}.\nPermanência de {100*permanency_amount/rounds}%')
+        
+        
+        #Desafio
+        winner = response['winner']
         if winner == 1:
             winrate1 += 1
         elif winner == 2:
-            winrate2 += 1
+            winrate2 += 1    
+    
+        #Vantagem Decisiva (da iteração)
+        biggest_advantages.append([biggest_advantage,winner])
+        print(f'A maior vantagem foi de {biggest_advantage}\n')
+        
+    #Vantagem Decisiva (geral)
+    biggest_positive_winner_2 = 0
+    biggest_negative_winner_1 = 0
+    for biggest_advantage, winner in biggest_advantages:
+        if winner == 2 and biggest_advantage > biggest_positive_winner_2:
+            biggest_positive_winner_2 = biggest_advantage
+        elif winner == 1 and biggest_advantage < biggest_negative_winner_1:
+            biggest_negative_winner_1 = biggest_advantage
+    #if biggest_negative_winner_1 == 0: biggest_negative_winner_1 = 1
+    #if biggest_positive_winner_2 == 0: biggest_positive_winner_2 = 1
+    
+    print('Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
+    print(f'Duração média: {duration_total/iterations} rounds')
+    print(f'mortes (totais): {deaths_total}')
+    print(f'Incerteza média: {uncertainty_total/iterations}')
+    print(f'Permanencia média do time 1: {permanency_team1/iterations}')
+    print(f'Permanencia média do time 2: {permanency_team2/iterations}')
+    print(f'Vantagem Decisiva para time 1: {biggest_positive_winner_2}')
+    print(f'Vantagem Decisiva para time 2: {abs(biggest_negative_winner_1)}')
     return 'Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
     
 
@@ -175,7 +307,7 @@ layout_creature_statistics =[
     [sg.Text("HP", size=(2, 1)), sg.Input(size=(5, 1), key='_HP_', justification='left', enable_events=True),
     sg.Text("AC", size=(2, 1)), sg.DropDown(values=[str(i) for i in range(5,31)], size=(5, 1), key='_AC_'),
     sg.Text("Iniciative", size=(10, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(5, 1), key='_INICIATIVE_')],
-    [sg.Text("AI", size=(2,1)), sg.DropDown(values=['Melee','Ranged','Support'], size=(7,1), key='_AI_')],
+    [sg.Text("AI", size=(2,1)), sg.DropDown(values=['Damage','Tank','Support', 'Neutral'], size=(7,1), key='_AI_')],
     [sg.Text("Saving Throws")],
     [sg.Text("STR", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST1_'),
     sg.Text("DEX", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST2_'),
@@ -234,11 +366,18 @@ layout_creature_actions = [
     [sg.Column(layout_creature_actions_sidebar, element_justification='c'), sg.VerticalSeparator(), sg.Column(layout_creature_actions_editor)]
 ]
 
+layout_creature_conditions = [
+    [sg.Text("Conditions")],
+    [sg.Button('Add Condition', use_ttk_buttons=True, key='_ADDCREATURECONDITION_'), sg.Button('Delete Condition', use_ttk_buttons=True, key='_DELETECREATURECONDITION_')],
+    [sg.Listbox(values=[], size=(50, 5), key='_CreatureConditionList_')]
+]
+
 layout_creature_stats = [
     [sg.Column(layout_creature_statistics, key='_CREATURESTATS_', visible=True),
     sg.Column(layout_creature_actions, key='_CREATUREACTIONS_', visible=False),
     sg.Column(layout_creature_combos, key='_CREATURECOMBOS_', visible=False),
-    sg.Column(layout_creature_resources, key='_CREATURERESOURCES_', visible=False)],
+    sg.Column(layout_creature_resources, key='_CREATURERESOURCES_', visible=False),
+    sg.Column(layout_creature_conditions, key='_CREATURECONDITIONS_', visible=False)],
     
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Creature')]
@@ -256,20 +395,24 @@ layout_creatures = [
 
 layout_condition_statistics = [
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CONDITIONNAME_', justification='left', enable_events=True)],
-    [sg.Text("Duration", size=(8,1)), sg.DropDown(values=[str(i) for i in range(1, 11)], size=(5,1), key='_DURATION_'), 
-    sg.Text('Turns, ends on', size=(14,1)), sg.DropDown(values=['Start Of','End Of'], size=(8,1), key='_ENDTYPE_'), 
-    sg.DropDown(values=['Caster Turn','Target Turn'], size=(11,1), key='_ENDON_')],
+    [sg.Text("Duration", size=(8,1)), sg.DropDown([1,2,10,100,'Permanent'], size=(5,1), key='_DURATION_'), 
+    sg.Text('Turns, ends on', size=(14,1)), sg.DropDown(values=condition_end_possibilities, key='_ENDTYPE_')],
 ]
 
 layout_condition_offenses = [
     [sg.Text("Attack modifier", size=(15,1)), sg.Input(size=(3,1), key='_ATTACKMOD_'), 
     sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ATTACKADVANTAGE_'),
-    sg.Text("Damage modifier", size=(15,1)), sg.Input(size=(3,1), key='_DAMAGEMOD_')]
+    sg.Text("Damage modifier", size=(15,1)), sg.Input(size=(3,1), key='_DAMAGEMOD_'),
+    sg.Text("Crits on:", size=(8,1)), sg.Input(size=(3,1), key='_CRITSON_')],
+    [sg.Text("Extra Damage")],
+    [sg.Text("Damage (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_EXTRADAMAGEROLL_'), sg.DropDown(values=damage_types, key='_EXTRADAMAGETYPE_')],
+    
 ]
 
 layout_condition_defenses = [
     [sg.Text("AC modifier", size=(11,1)), sg.Input(size=(3,1), key='_ACMOD_'),
     sg.Text("Attacks against made at", size=(23,1)), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_DEFENSEADVANTAGE_')],
+    [sg.Text("Auto crit?", size=(10,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_AUTOCRIT_')],
     [sg.Text("Saving Throw Modifiers", size=(21,1))],
     [sg.Text("STR", size=(3,1)), sg.Input(size=(3,1), key='_ST1MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST1ADVANTAGE_')],
     [sg.Text("DEX", size=(3,1)), sg.Input(size=(3,1), key='_ST2MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST2ADVANTAGE_')],
@@ -290,11 +433,18 @@ layout_condition_economy = [
     sg.Text("Reactions",size=(9,1)), sg.Input(size=(3,1), key='_REACTIONMOD_')]
 ]
 
+layout_condition_over_time = [
+    [sg.Text("Damage over time")],
+    [sg.Text("Damage (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_DAMAGEOVERTIMEROLL_'), sg.DropDown(values=damage_types, key='_DAMAGEOVERTIMETYPE_')],
+    [sg.Text("Healing over time (XdY+Z)"), sg.Input(size=(10, 1), key='_HEALINGOVERTIMEROLL_')],
+]
+
 layout_conditions_stats = [
     [sg.Column(layout_condition_statistics, key='_CONDITIONSTATS_', visible=True),
     sg.Column(layout_condition_offenses, key='_CONDITIONOFFENSE_', visible=False),
     sg.Column(layout_condition_defenses, key='_CONDITIONDEFENSE_', visible=False),
-    sg.Column(layout_condition_economy, key='_CONDITIONECONOMY_', visible=False)],
+    sg.Column(layout_condition_economy, key='_CONDITIONECONOMY_', visible=False),
+    sg.Column(layout_condition_over_time, key='_CONDITIONOVERTIME_', visible=False)],
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Condition'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Condition')]
 ]
@@ -337,13 +487,21 @@ layout_action_effects = [
     [sg.Listbox(values=[], size=(50, 5), key='_DamageList_')],
     [sg.Text("Healing (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_HEALINGROLL_', justification='left', enable_events=True, visible=False)],
     [sg.Button('Add Condition', use_ttk_buttons=True, visible=False, key='_ADDCONDITION_'), sg.Button('Delete Condition', use_ttk_buttons=True, visible=False, key='_DELETECONDITION_')],
+    [sg.Text("Concentration"), sg.DropDown(['True','False'], size=(5,1), key='_CONCENTRATION_')],
     [sg.Listbox(values=[], size=(50, 5), key='_ConditionList_')]
+]
+
+layout_action_followups = [
+    [sg.Text("Follow-up Actions")],
+    [sg.Button('Add Follow-up Action', use_ttk_buttons=True, visible=True, key='_ADDFOLLOWUPACTION_'), sg.Button('Delete Follow-up Action', use_ttk_buttons=True, visible=True, key='_DELETEFOLLOWUPACTION_')],
+    [sg.Listbox(values=[], size=(50, 5), key='_FollowupActionList_')]
 ]
     
 layout_action_stats = [
     [sg.Column(layout_action_statistics, key='_ACTIONSTATS_', visible=True),
     sg.Column(layout_action_costs, key='_ACTIONCOSTS_', visible=False),
-    sg.Column(layout_action_effects, key='_ACTIONEFFECTS_', visible=False)],
+    sg.Column(layout_action_effects, key='_ACTIONEFFECTS_', visible=False),
+    sg.Column(layout_action_followups, key='_ACTIONFOLLOWUPS_', visible = False)],
     
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Action'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Action')]
@@ -369,7 +527,7 @@ layout_simulator = [
 
 # Create the main window layout with the menu
 layout_main = [
-    [sg.Menu([['Creature', ['Creature Stats','Actions', 'Resources', 'Combos']], ['Action',['Action Stats', 'Costs', 'Effects']], ['Condition',['Condition Stats', 'Offense Modifiers','Defense Modifiers', 'Economy Modifiers']], ['Simulator',['Simulator']]])],
+    [sg.Menu([['Creature', ['Creature Stats','Actions', 'Conditions', 'Resources', 'Combos']], ['Action',['Action Stats', 'Costs', 'Effects', 'Follow-Ups']], ['Condition',['Condition Stats', 'Offense Modifiers','Defense Modifiers', 'Economy Modifiers', 'Over Time']], ['Simulator',['Simulator']]])],
     [sg.Column(layout_creatures, key='_CREATURE_', visible=True),
      sg.Column(layout_actions, key='_ACTION_', visible=False),
      sg.Column(layout_conditions, key='_CONDITION_', visible=False),
@@ -386,9 +544,10 @@ base_creature_data = {
     'Saving Throws': [0, 0, 0, 0, 0, 0],
     'Resources': [],
     'Actions': [],
+    'Conditions': [],
     'Combos': [],
     'Resistances': [],
-    'AI': 'Melee',
+    'AI': 'Damage',
     'Tags': []
 }
 
@@ -400,6 +559,7 @@ creature_data = {
     'Saving Throws': [None, None, None, None, None, None],
     'Resources': [],
     'Actions': [],
+    'Conditions': [],
     'Combos': [],
     'Resistances': [],
     'AI': None,
@@ -415,6 +575,8 @@ def update_creature(creature_data):
         window[f'_ST{i}_'].update(creature_data['Saving Throws'][i-1])
     window['_ResourcesList_'].update(creature_data['Resources'])
     window['_ActionList_'].update(creature_data['Actions'])
+    if 'Conditions' in creature_data: window['_CreatureConditionList_'].update(creature_data['Conditions'])
+    else: creature_data['Conditions'] = []
     window['_ComboList_'].update(creature_data['Combos'])
     window['_ResistanceList_'].update(creature_data['Resistances'])
     if 'AI' in creature_data: window['_AI_'].update(creature_data['AI'])
@@ -428,6 +590,7 @@ def update_creature_data(values):
     creature_data['Saving Throws'] = [values[f'_ST{i}_'] for i in range(1, 7)]
     creature_data['Resources'] = window['_ResourcesList_'].get_list_values()
     creature_data['Actions'] = window['_ActionList_'].get_list_values()
+    creature_data['Conditions'] = window['_CreatureConditionList_'].get_list_values()
     creature_data['Combos'] = window['_ComboList_'].get_list_values()
     creature_data['Resistances'] = window['_ResistanceList_'].get_list_values()
     creature_data['AI'] = values['_AI_']
@@ -469,49 +632,64 @@ layout_creature_actions_editor = [
 base_condition_data = {
     'Name': 'New Condition',
     'End Type': '',
-    'End On': '',
     'Duration': 1,
     'Attack Modifier': 0,
     'Attack Advantage': '',
+    'Crits On': 20,
     'Damage Modifier': 0,
+    'Extra Damage Roll': '',
+    'Extra Damage Type': '',
     'AC Modifier': 0,
     'Defense Advantage': '',
+    'Auto Crit': 'False',
     'Saves Modifier': [0,0,0,0,0,0],
     'Saves Advantage': ['','','','','',''],
     'Resistances': [],
     'Action Modifier': 0,
     'Bonus Action Modifier': 0,
-    'Reaction Modifier': 0
+    'Reaction Modifier': 0,
+    'Damage Over Time Roll': '',
+    'Damage Over Time Type': '',
+    'Healing Over Time': ''
 }    
 
 condition_data = {
     'Name': None,
     'End Type': None,
-    'End On': None,
     'Duration': None,
     'Attack Modifier': None,
     'Attack Advantage': None,
+    'Crits On': None,
     'Damage Modifier': None,
+    'Extra Damage Roll': None,
+    'Extra Damage Type': None,
     'AC Modifier': None,
     'Defense Advantage': None,
+    'Auto Crit': None,
     'Saves Modifier': [None,None,None,None,None,None],
     'Saves Advantage': [None,None,None,None,None,None],
     'Resistances': [],
     'Action Modifier': None,
     'Bonus Action Modifier': None,
-    'Reaction Modifier': None
+    'Reaction Modifier': None,
+    'Damage Over Time Roll': None,
+    'Damage Over Time Type': None,
+    'Healing Over Time': None
 }
 
 def update_condition(condition_data):
     window['_CONDITIONNAME_'].update(condition_data['Name'])
     window['_ENDTYPE_'].update(condition_data['End Type'])
-    window['_ENDON_'].update(condition_data['End On'])
     window['_DURATION_'].update(condition_data['Duration'])
     window['_ATTACKMOD_'].update(condition_data['Attack Modifier'])
     window['_ATTACKADVANTAGE_'].update(condition_data['Attack Advantage'])
+    window['_CRITSON_'].update(condition_data['Crits On'])
     window['_DAMAGEMOD_'].update(condition_data['Damage Modifier'])
+    window['_EXTRADAMAGEROLL_'].update(condition_data['Extra Damage Roll'])
+    window['_EXTRADAMAGETYPE_'].update(condition_data['Extra Damage Type'])
     window['_ACMOD_'].update(condition_data['AC Modifier'])
     window['_DEFENSEADVANTAGE_'].update(condition_data['Defense Advantage'])
+    window['_AUTOCRIT_'].update(condition_data['Auto Crit'])
     for i in range(1, 7):
         window[f'_ST{i}MOD_'].update(condition_data['Saves Modifier'][i-1])
         window[f'_ST{i}ADVANTAGE_'].update(condition_data['Saves Advantage'][i-1])
@@ -519,23 +697,32 @@ def update_condition(condition_data):
     window['_ACTIONMOD_'].update(condition_data['Action Modifier'])
     window['_BONUSACTIONMOD_'].update(condition_data['Bonus Action Modifier'])
     window['_REACTIONMOD_'].update(condition_data['Reaction Modifier'])
+    window['_DAMAGEOVERTIMEROLL_'].update(condition_data['Damage Over Time Roll'])
+    window['_DAMAGEOVERTIMETYPE_'].update(condition_data['Damage Over Time Type'])
+    window['_HEALINGOVERTIMEROLL_'].update(condition_data['Healing Over Time'])
 
 def update_condition_data(values):
     condition_data['Name'] = values['_CONDITIONNAME_']
     condition_data['End Type'] = values['_ENDTYPE_']
-    condition_data['End On'] = values['_ENDON_']
     condition_data['Duration'] = values['_DURATION_']
     condition_data['Attack Modifier'] = values['_ATTACKMOD_']
     condition_data['Attack Advantage'] = values['_ATTACKADVANTAGE_']
+    condition_data['Crits On'] = values['_CRITSON_']
     condition_data['Damage Modifier'] = values['_DAMAGEMOD_']
+    condition_data['Extra Damage Roll'] = values['_EXTRADAMAGEROLL_']
+    condition_data['Extra Damage Type'] = values['_EXTRADAMAGETYPE_']
     condition_data['AC Modifier'] = values['_ACMOD_']
     condition_data['Defense Advantage'] = values['_DEFENSEADVANTAGE_']
+    condition_data['Auto Crit'] = values['_AUTOCRIT_']
     condition_data['Saves Modifier'] = [values[f'_ST{i}MOD_'] for i in range(1, 7)]
     condition_data['Saves Advantage'] = [values[f'_ST{i}ADVANTAGE_'] for i in range(1, 7)]
     condition_data['Resistances'] = window['_ResistanceModList_'].get_list_values()
     condition_data['Action Modifier'] = values['_ACTIONMOD_']
     condition_data['Bonus Action Modifier'] = values['_BONUSACTIONMOD_']
     condition_data['Reaction Modifier'] = values['_REACTIONMOD_']
+    condition_data['Damage Over Time Roll'] = values['_DAMAGEOVERTIMEROLL_']
+    condition_data['Damage Over Time Type'] = values['_DAMAGEOVERTIMETYPE_']
+    condition_data['Healing Over Time'] = values['_HEALINGOVERTIMEROLL_']
 
 base_action_data = {
     'Name': 'New Action',
@@ -550,7 +737,9 @@ base_action_data = {
     'Save Type': 'STR',
     'Damage': [],
     'Healing Roll': '1d6+0',
-    'Conditions': []
+    'Conditions': [],
+    'Concentration': False,
+    'Follow Actions': []
 }
 
 action_data = {
@@ -566,7 +755,9 @@ action_data = {
     'Save Type': None,
     'Damage': [],
     'Healing Roll': None,
-    'Conditions': []
+    'Conditions': [],
+    'Concentration': None,
+    'Follow Actions': []
 }
 
 def update_action(action_data):
@@ -586,6 +777,8 @@ def update_action(action_data):
         window['_DamageList_'].update([])
     window['_HEALINGROLL_'].update(action_data['Healing Roll'])
     window['_ConditionList_'].update(action_data['Conditions'])
+    if 'Concentration' in action_data: window['_CONCENTRATION_'].update(action_data['Concentration'])
+    window['_FollowupActionList_'].update(action_data['Follow Actions'])
 
 def update_action_data(values):
     action_data['Name'] = values['_ACTIONNAME_']
@@ -601,6 +794,8 @@ def update_action_data(values):
     action_data['Damage'] = window['_DamageList_'].get_list_values()
     action_data['Healing Roll'] = values['_HEALINGROLL_']
     action_data['Conditions'] = window['_ConditionList_'].get_list_values()
+    action_data['Concentration'] = values['_CONCENTRATION_']
+    action_data['Follow Actions'] = window['_FollowupActionList_'].get_list_values()
 
 simulation_data = {
     'Team1': [],
@@ -644,6 +839,7 @@ while True:
         window['_SIMULATOR_'].update(visible=False)
         window['_CREATURESTATS_'].update(visible=True)
         window['_CREATUREACTIONS_'].update(visible=False)
+        window['_CREATURECONDITIONS_'].update(visible=False)
         window['_CREATURECOMBOS_'].update(visible=False)
         window['_CREATURERESOURCES_'].update(visible=False)
     elif event == 'Actions':
@@ -653,6 +849,17 @@ while True:
         window['_SIMULATOR_'].update(visible=False)
         window['_CREATURESTATS_'].update(visible=False)
         window['_CREATUREACTIONS_'].update(visible=True)
+        window['_CREATURECONDITIONS_'].update(visible=False)
+        window['_CREATURECOMBOS_'].update(visible=False)
+        window['_CREATURERESOURCES_'].update(visible=False)
+    elif event == 'Conditions':
+        window['_CREATURE_'].update(visible=True)
+        window['_ACTION_'].update(visible=False)
+        window['_CONDITION_'].update(visible=False)
+        window['_SIMULATOR_'].update(visible=False)
+        window['_CREATURESTATS_'].update(visible=False)
+        window['_CREATUREACTIONS_'].update(visible=False)
+        window['_CREATURECONDITIONS_'].update(visible=True)
         window['_CREATURECOMBOS_'].update(visible=False)
         window['_CREATURERESOURCES_'].update(visible=False)
     elif event == 'Resources':
@@ -662,6 +869,7 @@ while True:
         window['_SIMULATOR_'].update(visible=False)
         window['_CREATURESTATS_'].update(visible=False)
         window['_CREATUREACTIONS_'].update(visible=False)
+        window['_CREATURECONDITIONS_'].update(visible=False)
         window['_CREATURECOMBOS_'].update(visible=False)
         window['_CREATURERESOURCES_'].update(visible=True)
     elif event == 'Combos':
@@ -671,6 +879,7 @@ while True:
         window['_SIMULATOR_'].update(visible=False)
         window['_CREATURESTATS_'].update(visible=False)
         window['_CREATUREACTIONS_'].update(visible=False)
+        window['_CREATURECONDITIONS_'].update(visible=False)
         window['_CREATURECOMBOS_'].update(visible=True)
         window['_CREATURERESOURCES_'].update(visible=False)
     elif event == 'Action Stats':
@@ -681,6 +890,7 @@ while True:
         window['_ACTIONSTATS_'].update(visible=True)
         window['_ACTIONCOSTS_'].update(visible=False)
         window['_ACTIONEFFECTS_'].update(visible=False)
+        window['_ACTIONFOLLOWUPS_'].update(visible=False)
     elif event == 'Costs':
         window['_CREATURE_'].update(visible=False)
         window['_ACTION_'].update(visible=True)
@@ -689,6 +899,7 @@ while True:
         window['_ACTIONSTATS_'].update(visible=False)
         window['_ACTIONCOSTS_'].update(visible=True)
         window['_ACTIONEFFECTS_'].update(visible=False)
+        window['_ACTIONFOLLOWUPS_'].update(visible=False)
     elif event == 'Effects':
         window['_CREATURE_'].update(visible=False)
         window['_ACTION_'].update(visible=True)
@@ -697,6 +908,16 @@ while True:
         window['_ACTIONSTATS_'].update(visible=False)
         window['_ACTIONCOSTS_'].update(visible=False)
         window['_ACTIONEFFECTS_'].update(visible=True)
+        window['_ACTIONFOLLOWUPS_'].update(visible=False)
+    elif event == 'Follow-Ups':
+        window['_CREATURE_'].update(visible=False)
+        window['_ACTION_'].update(visible=True)
+        window['_CONDITION_'].update(visible=False)
+        window['_SIMULATOR_'].update(visible=False)
+        window['_ACTIONSTATS_'].update(visible=False)
+        window['_ACTIONCOSTS_'].update(visible=False)
+        window['_ACTIONEFFECTS_'].update(visible=False)
+        window['_ACTIONFOLLOWUPS_'].update(visible=True)
     elif event == 'Condition Stats':
         window['_CREATURE_'].update(visible=False)
         window['_ACTION_'].update(visible=False)
@@ -706,6 +927,7 @@ while True:
         window['_CONDITIONOFFENSE_'].update(visible=False)
         window['_CONDITIONDEFENSE_'].update(visible=False)
         window['_CONDITIONECONOMY_'].update(visible=False)
+        window['_CONDITIONOVERTIME_'].update(visible=False)
     elif event == 'Offense Modifiers':
         window['_CREATURE_'].update(visible=False)
         window['_ACTION_'].update(visible=False)
@@ -715,6 +937,7 @@ while True:
         window['_CONDITIONOFFENSE_'].update(visible=True)
         window['_CONDITIONDEFENSE_'].update(visible=False)
         window['_CONDITIONECONOMY_'].update(visible=False)
+        window['_CONDITIONOVERTIME_'].update(visible=False)
     elif event == 'Defense Modifiers':
         window['_CREATURE_'].update(visible=False)
         window['_ACTION_'].update(visible=False)
@@ -724,6 +947,7 @@ while True:
         window['_CONDITIONOFFENSE_'].update(visible=False)
         window['_CONDITIONDEFENSE_'].update(visible=True)
         window['_CONDITIONECONOMY_'].update(visible=False)
+        window['_CONDITIONOVERTIME_'].update(visible=False)
     elif event == 'Economy Modifiers':
         window['_CREATURE_'].update(visible=False)
         window['_ACTION_'].update(visible=False)
@@ -733,6 +957,17 @@ while True:
         window['_CONDITIONOFFENSE_'].update(visible=False)
         window['_CONDITIONDEFENSE_'].update(visible=False)
         window['_CONDITIONECONOMY_'].update(visible=True)
+        window['_CONDITIONOVERTIME_'].update(visible=False)
+    elif event == 'Over Time':
+        window['_CREATURE_'].update(visible=False)
+        window['_ACTION_'].update(visible=False)
+        window['_CONDITION_'].update(visible=True)
+        window['_SIMULATOR_'].update(visible=False)
+        window['_CONDITIONSTATS_'].update(visible=False)
+        window['_CONDITIONOFFENSE_'].update(visible=False)
+        window['_CONDITIONDEFENSE_'].update(visible=False)
+        window['_CONDITIONECONOMY_'].update(visible=False)
+        window['_CONDITIONOVERTIME_'].update(visible=True)
     
     
     #Creature Events
@@ -810,6 +1045,19 @@ while True:
         action_data = window['_ActionList_'].get_list_values()
         action_data.remove(selected_action)
         window['_ActionList_'].update(action_data)
+        
+    elif event == '_ADDCREATURECONDITION_':
+        filename = sg.popup_get_file('Load Condition Data', file_types=(('JSON Files', '*.json'),))
+        if filename:
+            condition_data = load(filename)
+            creature_data['Conditions'].append(condition_data)
+            window['_CreatureConditionList_'].update(creature_data['Conditions'])
+    elif event == '_DELETECREATURECONDITION_' and values['_CreatureConditionList_']:
+        selected_condition = values['_CreatureConditionList_'][0]
+        condition_data = window['_CreatureConditionList_'].get_list_values()
+        condition_data.remove(selected_action)
+        window['_CreatureConditionList_'].update(condition_data)    
+    
     elif event == 'Add Combo':
         combo_data = window['_ComboList_'].get_list_values()
         combo_data.append(values['_COMBONAME_'])
@@ -879,6 +1127,19 @@ while True:
         resistance_data = window['_ResistanceModList_'].get_list_values()
         resistance_data.remove(selected_resistance)
         window['_ResistanceModList_'].update(resistance_data)
+    
+    elif event == 'Add Damage Over Time':
+        damage_roll = values['_DAMAGEOVERTIMEROLL_']
+        damage_type = values['_DAMAGEOVERTIMETYPE_']
+        damage_data = window['_DamageOverTimeList_'].get_list_values()
+        damage_data.append({'Damage Roll': damage_roll, 'Damage Type': damage_type})
+        window['_DamageOverTimeList_'].update(damage_data)
+    elif event == 'Remove Damage Over Time' and values['_DamageOverTimeList_']:
+        selected_damage = values['_DamageOverTimeList_'][0]
+        damage_data = window['_DamageOverTimeList_'].get_list_values()
+        damage_data.remove(selected_damage)
+        window['_DamageOverTimeList_'].update(damage_data)
+    
     elif event == 'Save Condition':# Update condition_data with input values
         update_condition_data(values)
 
@@ -952,6 +1213,19 @@ while True:
         condition_data = window['_ConditionList_'].get_list_values()
         condition_data.remove(selected_condition)
         window['_ConditionList_'].update(condition_data)
+        
+    elif event == '_ADDFOLLOWUPACTION_':
+        filename = sg.popup_get_file('Load Action Data', file_types=(('JSON Files', '*.json'),))
+        if filename:
+            follow_action_data = load(filename)
+            action_data['Follow Actions'].append(follow_action_data)
+            window['_FollowupActionList_'].update(action_data['Follow Actions'])
+    elif event == '_DELETEFOLLOWUPACTION_' and values['_FollowupActionList_']:
+        selected_action = values['_FollowupActionList_'][0]
+        follow_action_data = window['_FollowupActionList_'].get_list_values()
+        follow_action_data.remove(selected_action)
+        window['_FollowupActionList_'].update(follow_action_data)
+        
     elif event == 'Add Cost':
         name = values['_ACTIONRESOURCENAME_']
         number = values['_ACTIONRESOURCECOST_']

@@ -4,9 +4,66 @@ from math import floor
 from intelligence import Intelligence
 import random
 
+ai_modifiers = {
+    'Damage': {
+        'damage_favor': 1.5, 
+        'healing_favor': 0.75, 
+        'self_buff_favor': 1.25, 
+        'ally_buff_favor': 0.75, 
+        'debuff_favor': 0.9
+    },
+    'Tank': {
+        'damage_favor': 1.25, 
+        'healing_favor': 1, 
+        'self_buff_favor': 1.5, 
+        'ally_buff_favor': 0.75, 
+        'debuff_favor': 1
+    },
+    'Support': {
+        'damage_favor': 0.75, 
+        'healing_favor': 1.5, 
+        'self_buff_favor': 0.85, 
+        'ally_buff_favor': 1.5, 
+        'debuff_favor': 1.5
+    },
+    'Neutral': {
+        'damage_favor': 1, 
+        'healing_favor': 1, 
+        'self_buff_favor': 1, 
+        'ally_buff_favor': 1, 
+        'debuff_favor': 1
+    }
+}
+ai_target_modifiers = {
+    'Damage': {
+        'Tank': 1.2, 
+        'Damage': 1, 
+        'Support': 0.9, 
+        'Neutral': 1
+    },
+    'Tank': {
+        'Tank': 2, 
+        'Damage': 1, 
+        'Support': 0.75, 
+        'Neutral': 1
+    },
+    'Support': {
+        'Tank': 1.5, 
+        'Damage': 1, 
+        'Support': 1,
+        'Neutral': 1
+    },
+    'Neutral': {
+        'Tank': 1, 
+        'Damage': 1, 
+        'Support': 1, 
+        'Neutral': 1
+    }
+}
+
 class Creature:
 
-    def __init__(self, name, max_hit_points, armor_class, saving_throws, iniciative, AI_type = 'Random', tags = []):
+    def __init__(self, name, max_hit_points, armor_class, saving_throws, iniciative, AI_type = 'Neutral', tags = []):
         self.name = name
         self.MHP = max_hit_points
         self.HP = self.MHP
@@ -31,6 +88,7 @@ class Creature:
         self.rest_resources = {}
         self.recharge_resources = {}
         self.concentration = False
+        self.permanent_conditions = []
         self.conditions = []
         self.applied_conditions = {
             "Concentration": [],
@@ -40,7 +98,9 @@ class Creature:
         self.team = 0
         self.AI_type = AI_type
         self.tags = tags
-        self.intelligence = Intelligence(False)
+        self.intelligence = Intelligence(True,ai_modifiers[self.AI_type],ai_target_modifiers[self.AI_type])
+        self.crits_on = 20 #Quanto precisa rolar pra um ataque ser crítico
+        self.auto_crit = False #Qualquer ataque que acerta essa criatura é um crítico
         
     def add_action(self, action):
         self.actions.append(action)
@@ -66,30 +126,38 @@ class Creature:
     def add_damage_type_multiplier(self, damage_type, multiplier):
         self.damage_type_multipliers[damage_type] = multiplier
         
-    def add_resource(self, resource_type, resource_amount, regain_type, recharge_number = None):
+    def add_resource(self, resource_type, resource_amount, regain_type):
         self.max_resources[resource_type] = resource_amount
         self.current_resources[resource_type] = resource_amount
         if regain_type == 'Short Rest':
             self.rest_resources[resource_type] = 'Short Rest'
         elif regain_type == 'Long Rest':
             self.rest_resources[resource_type] = 'Long Rest'
-        elif regain_type == 'Recharge':
-            self.recharge_resources[resource_type] = recharge_number
+        elif regain_type.startswith('Recharge'):
+            self.recharge_resources[resource_type] = int(regain_type.split()[1])
     
-    def full_restore(self):
-        self.HP = self.MHP
-        for resource_type, resource_amount in self.max_resources.items():
-            self.current_resources[resource_type] = self.max_resources[resource_type]
+    def remove_all_conditions(self):
         for condition in self.conditions:
             condition.remove_condition()
         for condition in self.applied_conditions['Concentration']:
             condition.remove_condition()
         for condition in self.applied_conditions['Non-Concentration']:
             condition.remove_condition()
+        
+    
+    def full_restore(self):
+        self.HP = self.MHP
+        for resource_type, resource_amount in self.max_resources.items():
+            self.current_resources[resource_type] = self.max_resources[resource_type]
+        self.remove_all_conditions()
     
     def add_simulator(self, simulator, team):
         self.simulator = simulator
         self.team = team
+        
+    def add_permanent_condition(self, condition):
+        self.permanent_conditions.append(condition)
+        print(condition.name)
     
     def add_applied_condition(self, condition, concentration):
         if concentration:
@@ -156,7 +224,7 @@ class Creature:
             if filtered_combos:
                 selected_index = random.choices(range(len(filtered_combos)), weights=filtered_scores_averages, k=1)[0]
                 selected_combo = filtered_combos[selected_index]
-                selected_scores = filtered_scores[i]
+                selected_scores = filtered_scores[selected_index]
                 for i, action in enumerate(selected_combo):
                     if action.target_type == 'Self':
                         action.act([self],self)
@@ -226,6 +294,8 @@ class Creature:
     
     def start_of_turn(self):
         print('\nTurno de:', self.name)
+        for condition in self.permanent_conditions:
+            condition.notify_SoT(isCaster = False)
         for condition in self.conditions:
             condition.notify_SoT(isCaster = False)
         for condition in self.applied_conditions['Concentration']:
@@ -253,6 +323,8 @@ class Creature:
         self.end_of_turn()
     
     def end_of_turn(self):
+        for condition in self.permanent_conditions:
+            condition.notify_EoT(isCaster = False)
         for condition in self.conditions:
             condition.notify_EoT(isCaster = False)
         for condition in self.applied_conditions['Concentration']:
@@ -287,18 +359,23 @@ class Creature:
                 print('dano modificado de', damage, 'para', floor(damage*self.damage_type_multipliers.get(damage_type)), 'devido a resistencias/fraquezas/imunidades')
                 damage = floor(damage*self.damage_type_multipliers.get(damage_type))
             self.HP -= damage
+            print(f'{self.name} toma {damage} de dano. está agora com {self.HP} de vida')
             total_damage_taken += damage
-            print(self.name, 'toma', damage, 'de dano! HP reduzido para', self.HP)
             if not self.is_alive():
                 print(self.name, 'morreu')
                 self.simulator.notify_death(self,self.team)
+                self.remove_all_conditions()
+                self.lose_concentration()
+                return False
         if total_damage_taken > 0 and self.applied_conditions["Concentration"]:
             if not self.make_save(max(10,total_damage_taken/2),2):
                 self.lose_concentration()
+        for condition in self.conditions:
+            condition.notify_damaged()
+        return True
         
     def recover_hit_points(self,amount):
         self.HP += amount
-        #Atualmente removendo o cap de max HP até definir lógica de ações
         if self.HP > self.MHP:
             self.HP = self.MHP
         print(self.name, 'recupera',amount,'de hp. Está agora com',self.HP)

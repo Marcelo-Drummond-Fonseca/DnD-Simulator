@@ -54,7 +54,8 @@ class Attack_Roll(Attempt):
         result_list = []
         for target in targets:
             attack_roll = d20roll(self.attack_bonus,int(self.advantage + target.AC_advantage >0) - int(self.disadvantage + target.AC_disadvantage>0))
-            if attack_roll == 20 + self.attack_bonus:
+            print(creature.crits_on, creature.permanent_conditions)
+            if attack_roll >= creature.crits_on + self.attack_bonus or target.auto_crit == True:
                 print('Critico!')
                 result_list.append(2)
             else:
@@ -81,6 +82,8 @@ class Saving_Throw(Attempt):
         self.save_type = save_type
         self.half_on_save = half_on_save
         self.effect = effect
+        if isinstance(self.effect, Apply_Condition):
+            self.effect.condition.saving_throw = [save_DC,save_type]
 
     def act(self,targets,creature):
         result_list = []
@@ -103,11 +106,9 @@ class Effect:
 
 class Damage(Effect):
     
-    def __init__(self, damage, follow_attack = None, follow_attempt = None, follow_effect = None):
+    def __init__(self, damage, follow_actions = []):
         self.damage = damage #damage tem a forma [quantidade de dados, tamanho de dados, modifier, tipo de dano]
-        self.follow_attack = follow_attack
-        self.follow_attempt = follow_attempt
-        self.follow_effect = follow_effect
+        self.follow_actions = follow_actions
     
     def add_damage_modifier(self, damage_modifier):
         self.damage[0][2] += damage_modifier #Modifiers a mais afetam somente o primeiro dano
@@ -123,13 +124,21 @@ class Damage(Effect):
             total_damage = []
             total_half_damage = []
             for damage_parcel in self.damage:
-                damage = diceroll(self.damage_parcel[0],self.damage_parcel[1],self.damage_parcel[2])
+                damage = diceroll(damage_parcel[0],damage_parcel[1],damage_parcel[2])
                 half_damage = floor(damage/2)
                 total_damage.append([damage,damage_parcel[3]])
                 total_half_damage.append([half_damage,damage_parcel[3]])
-            for i in range(len(targets)):
+            for i in reversed(range(len(targets))):
                 if result_list[i] == 1:
-                    targets[i].take_damage(total_damage)
+                    alive = targets[i].take_damage(total_damage)
+                    for follow_action in self.follow_actions:
+                        possible = True
+                        if not alive: possible = False
+                        if follow_action.resource_cost:
+                            if creature.current_resources[follow_action.resource_cost[0]] < follow_action.resource_cost[1]: possible = False
+                        if possible: 
+                            follow_value = creature.intelligence.choose_action([[follow_action]], [creature], [targets[i]], creature)
+                            if follow_value[0][0][0] > 0: follow_action.act([targets[i]], creature)
                 elif result_list[i] == 0:
                     targets[i].take_damage(total_half_damage)
         elif len(targets) == 1:
@@ -138,19 +147,29 @@ class Damage(Effect):
                 for damage_parcel in self.damage:
                     damage = diceroll(damage_parcel[0],damage_parcel[1],damage_parcel[2])
                     total_damage.append([damage,damage_parcel[3]])
-                targets[0].take_damage(total_damage)
+                alive = targets[0].take_damage(total_damage)
+                for follow_action in self.follow_actions:
+                    possible = True
+                    if not alive: possible = False
+                    if follow_action.resource_cost:
+                        if creature.current_resources[follow_action.resource_cost[0]] < follow_action.resource_cost[1]: possible = False
+                    if possible: 
+                        follow_value = creature.intelligence.choose_action([[follow_action]], [creature], [targets[0]], creature)
+                        if follow_value[0][0][0] > 0: follow_action.act([targets[0]], creature)
             elif result_list[0] == 2:
                 total_crit_damage = []
                 for damage_parcel in self.damage:
                     crit_damage = diceroll(damage_parcel[0]*2,damage_parcel[1],damage_parcel[2])
                     total_crit_damage.append([crit_damage,damage_parcel[3]])
-                targets[0].take_damage(total_crit_damage)
-        if self.follow_attack:
-            self.follow_attack.act(targets)
-        if self.follow_attempt:
-            self.follow_attempt.act(targets)
-        if self.follow_effect:
-            self.follow_effect.apply(targets,result_list,creature)
+                alive = targets[0].take_damage(total_crit_damage)
+                for follow_action in self.follow_actions:
+                    possible = True
+                    if not alive: possible = False
+                    if follow_action.resource_cost:
+                        if creature.current_resources[follow_action.resource_cost[0]] < follow_action.resource_cost[1]: possible = False
+                    if possible: 
+                        follow_value = creature.intelligence.choose_action([[follow_action]], [creature], [targets[0]], creature)
+                        if follow_value[0][0][0] > 0: follow_action.act([targets[0]], creature)
 
 class Healing(Effect):
     
