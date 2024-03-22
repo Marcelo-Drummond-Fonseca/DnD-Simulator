@@ -3,6 +3,9 @@ from diceroller import d20roll, diceroll
 from math import floor
 from intelligence import Intelligence
 import random
+import logger
+import logging
+
 
 ai_modifiers = {
     'Damage': {
@@ -21,7 +24,7 @@ ai_modifiers = {
     },
     'Support': {
         'damage_favor': 0.75, 
-        'healing_favor': 1.5, 
+        'healing_favor': 2, 
         'self_buff_favor': 0.85, 
         'ally_buff_favor': 1.5, 
         'debuff_favor': 1.5
@@ -102,6 +105,7 @@ class Creature:
         self.intelligence = Intelligence(True,ai_modifiers[self.AI_type],ai_target_modifiers[self.AI_type])
         self.crits_on = 20 #Quanto precisa rolar pra um ataque ser crítico
         self.auto_crit = False #Qualquer ataque que acerta essa criatura é um crítico
+        self.evasion = [False, False, False, False, False, False] #Se possui evasion para algum tipo de saving throw
         
     def add_action(self, action):
         self.actions.append(action)
@@ -161,7 +165,7 @@ class Creature:
         
     def add_permanent_condition(self, condition):
         self.permanent_conditions.append(condition)
-        print(condition.name)
+        logging.info(condition.name)
     
     def add_applied_condition(self, condition, concentration):
         if concentration:
@@ -177,15 +181,15 @@ class Creature:
     
     def add_condition(self, condition):
         self.conditions.append(condition)
-        print(self.name, "ganhou condição:", condition.name)
+        logging.info(f'{self.name} está afetado pela condição: {condition.name}')
     
     def remove_condition(self, condition):
         self.conditions.remove(condition)
-        print(self.name, "perdeu condição:", condition.name)
+        logging.info(f'{self.name} não está mais afetado pela condição: {condition.name}')
     
     def lose_concentration(self):
         for condition in self.applied_conditions['Concentration']:
-            print(f'{self.name} perde concentration em {condition.name}')
+            logging.info(f'{self.name} perde concentration em {condition.name}')
             condition.remove_condition()
     
     def choose_combo(self, options, by_index):
@@ -265,7 +269,7 @@ class Creature:
         #for action in actions:
             #target = choice(self.simulator.get_enemy_team(self.team))
         #    targets = action.get_targets(self)
-        #    print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
+        #    logging.info(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
         #    if action.resource_cost:
         #        self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
         #    action.act(targets, self)
@@ -290,14 +294,14 @@ class Creature:
             action = choice(possible_actions)
             #target = choice(self.simulator.get_enemy_team(self.team))
             targets = action.get_targets(self)
-            print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
+            logging.info(f'{self.name} usa {action.name} contra {[creature.name for creature in targets]}')
             if action.resource_cost:
                 self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
             action.act(targets, self)
         
     
     def start_of_turn(self):
-        print('\nTurno de:', self.name)
+        logging.info(f'Turno de: {self.name}')
         for condition in self.permanent_conditions:
             condition.notify_SoT(isCaster = False)
         for condition in self.conditions:
@@ -313,7 +317,7 @@ class Creature:
         for resource_type, recharge in self.recharge_resources.items():
             if recharge <= diceroll(1,6,0):
                 self.current_resources[resource_type] = self.max_resources[resource_type]
-                print(self.name,'Recarrega seu',resource_type)
+                logging.info(f'{self.name} Recarrega seu {resource_type}')
         
         
         #Filtrar Free actions por recursos
@@ -338,19 +342,19 @@ class Creature:
     
     def check_hit(self, attack_roll):
         if attack_roll >= self.AC:
-            print('Ataque de', attack_roll, 'acerta AC de', self.AC)
+            logging.info(f'Ataque de {attack_roll} acerta AC de {self.AC}')
             return True
         else:
-            print('Ataque de', attack_roll, 'erra AC de', self.AC)
+            logging.info(f'Ataque de {attack_roll} erra AC de {self.AC}')
             return False
     
     def make_save(self,save_DC,save_type):
         save = d20roll(self.saving_throws[save_type],int(self.save_advantage[save_type]) - int(self.save_disadvantage[save_type]))
         if save >= save_DC:
-            print('Saving throw de',self.name,'de',save,'passa contra save DC de',save_DC)
+            logging.info(f'Saving throw de {self.name} de {save} passa contra save DC de {save_DC}')
             return True
         else:
-            print('Saving throw de',self.name,'de',save,'falha contra save DC de',save_DC)
+            logging.info(f'Saving throw de {self.name} de {save} falha contra save DC de {save_DC}')
             return False
 
     
@@ -360,13 +364,13 @@ class Creature:
             damage = damage_tuple[0]
             damage_type = damage_tuple[1]
             if self.damage_type_multipliers.get(damage_type):
-                print('dano modificado de', damage, 'para', floor(damage*self.damage_type_multipliers.get(damage_type)), 'devido a resistencias/fraquezas/imunidades')
+                logging.info(f'dano modificado de {damage} para {floor(damage*self.damage_type_multipliers.get(damage_type))} devido a resistencias/fraquezas/imunidades')
                 damage = floor(damage*self.damage_type_multipliers.get(damage_type))
             self.HP -= damage
-            print(f'{self.name} toma {damage} de dano. está agora com {self.HP} de vida')
+            logging.info(f'{self.name} toma {damage} de dano. está agora com {self.HP} de vida')
             total_damage_taken += damage
             if not self.is_alive():
-                print(self.name, 'morreu')
+                logging.info(f'{self.name} morreu')
                 self.simulator.notify_death(self,self.team)
                 self.remove_all_conditions()
                 self.lose_concentration()
@@ -382,11 +386,11 @@ class Creature:
         self.HP += amount
         if self.HP > self.MHP:
             self.HP = self.MHP
-        print(self.name, 'recupera',amount,'de hp. Está agora com',self.HP)
+        logging.info(f'{self.name} recupera {amount} de hp. Está agora com {self.HP}')
     
     def roll_iniciative(self):
         iniciative = d20roll(self.iniciative,0)
-        print(self.name, 'rolou', iniciative, 'de iniciativa')
+        logging.info(f'{self.name} rolou  {iniciative} de iniciativa')
         return iniciative
         
     def is_alive(self):

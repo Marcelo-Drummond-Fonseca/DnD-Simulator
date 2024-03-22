@@ -1,3 +1,6 @@
+import logger
+import logging
+
 class Simulator:
     acting_order = []
     team1 = []
@@ -61,7 +64,7 @@ class Simulator:
     def end_simulation(self):
         if self.team1:
             self.advantage_record.append(1)
-            print('\nTeam 1 Wins!\n')
+            logging.info('Team 1 Wins!')
             response = {
                 'winner': 1,
                 'rounds': self.rounds,
@@ -73,7 +76,7 @@ class Simulator:
             return(response)
         elif self.team2:
             self.advantage_record.append(2)
-            print('\nTeam 2 Wins!\n')
+            logging.info('Team 2 Wins!')
             response = {
                 'winner': 2,
                 'rounds': self.rounds,

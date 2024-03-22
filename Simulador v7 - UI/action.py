@@ -1,6 +1,9 @@
 from random import sample
 from diceroller import d20roll, diceroll
 from math import floor
+import logger
+import logging
+import copy
 
 class Action:
     def __init__(self, name, target_number, target_type, attempt, resource_cost = None, tags = [], is_concentration = False):
@@ -14,7 +17,7 @@ class Action:
     
     def act(self, targets, creature):
         if self.is_concentration: creature.lose_concentration()
-        print(f'{creature.name} usa {self.name} contra {[target.name for target in targets]}')
+        logging.info(f'{creature.name} usa {self.name} contra {[target.name for target in targets]}')
         if self.resource_cost:
             creature.current_resources[self.resource_cost[0]] -= self.resource_cost[1]
         self.attempt.act(targets, creature)
@@ -53,10 +56,15 @@ class Attack_Roll(Attempt):
     def act(self,targets,creature):
         result_list = []
         for target in targets:
+            paired_conditions = []
+            for condition in target.conditions:
+                if condition.is_paired == True and condition.caster == creature:
+                    paired_conditions.append(condition)
+            for paired_condition in paired_conditions:
+                paired_condition.apply_condition()
             attack_roll = d20roll(self.attack_bonus,int(self.advantage + target.AC_advantage >0) - int(self.disadvantage + target.AC_disadvantage>0))
-            print(creature.crits_on, creature.permanent_conditions)
             if attack_roll >= creature.crits_on + self.attack_bonus or target.auto_crit == True:
-                print('Critico!')
+                logging.info('Critico!')
                 result_list.append(2)
             else:
                 hit = target.check_hit(attack_roll)
@@ -64,6 +72,8 @@ class Attack_Roll(Attempt):
                     result_list.append(1)
                 else:
                     result_list.append(-1)
+            for paired_condition in paired_conditions:
+                paired_condition.unapply_condition()
         self.effect.apply(targets,result_list,creature)
 
 class Auto_Apply(Attempt):
@@ -88,14 +98,23 @@ class Saving_Throw(Attempt):
     def act(self,targets,creature):
         result_list = []
         for target in targets:
+            paired_conditions = []
+            for condition in target.conditions:
+                if condition.is_paired == True and condition.caster == creature:
+                    paired_conditions.append(condition)
+            for paired_condition in paired_conditions:
+                paired_condition.apply_condition()
+            target_has_evasion = target.evasion[self.save_type]
             passed = target.make_save(self.save_DC,self.save_type)
-            if passed == False:
+            if passed == False and not (target_has_evasion and self.half_on_save):
                 result_list.append(1)
-            elif self.half_on_save:
+            elif ((passed == True and self.half_on_save) or (passed == False and target_has_evasion and self.half_on_save)):
                 result_list.append(0)
             else:
                 result_list.append(-1)
-        self.effect.apply(targets,result_list,creature)
+            for paired_condition in paired_conditions:
+                paired_condition.unapply_condition()
+        self.effect.apply(targets,result_list,creature, saving_throw = True)
 
 class Effect:
     def __init__(self):
@@ -119,8 +138,8 @@ class Damage(Effect):
     def remove_damage(self, damage):
         self.damage.remove(damage)
     
-    def apply(self, targets, result_list, creature):
-        if len(targets) > 1:
+    def apply(self, targets, result_list, creature, saving_throw = False):
+        if saving_throw:
             total_damage = []
             total_half_damage = []
             for damage_parcel in self.damage:
@@ -129,6 +148,12 @@ class Damage(Effect):
                 total_damage.append([damage,damage_parcel[3]])
                 total_half_damage.append([half_damage,damage_parcel[3]])
             for i in reversed(range(len(targets))):
+                paired_conditions = []
+                for condition in targets[i].conditions:
+                    if condition.is_paired == True and condition.caster == creature:
+                        paired_conditions.append(condition)
+                for paired_condition in paired_conditions:
+                    paired_condition.apply_condition()
                 if result_list[i] == 1:
                     alive = targets[i].take_damage(total_damage)
                     for follow_action in self.follow_actions:
@@ -141,8 +166,16 @@ class Damage(Effect):
                             if follow_value[0][0][0] > 0: follow_action.act([targets[i]], creature)
                 elif result_list[i] == 0:
                     targets[i].take_damage(total_half_damage)
-        elif len(targets) == 1:
+                for paired_condition in paired_conditions:
+                    paired_condition.unapply_condition()
+        else:
             if result_list[0] == 1:
+                paired_conditions = []
+                for condition in targets[0].conditions:
+                    if condition.is_paired == True and condition.caster == creature:
+                        paired_conditions.append(condition)
+                for paired_condition in paired_conditions:
+                    paired_condition.apply_condition()
                 total_damage = []
                 for damage_parcel in self.damage:
                     damage = diceroll(damage_parcel[0],damage_parcel[1],damage_parcel[2])
@@ -156,7 +189,15 @@ class Damage(Effect):
                     if possible: 
                         follow_value = creature.intelligence.choose_action([[follow_action]], [creature], [targets[0]], creature)
                         if follow_value[0][0][0] > 0: follow_action.act([targets[0]], creature)
+                for paired_condition in paired_conditions:
+                    paired_condition.unapply_condition()
             elif result_list[0] == 2:
+                paired_conditions = []
+                for condition in targets[0].conditions:
+                    if condition.is_paired == True and condition.caster == creature:
+                        paired_conditions.append(condition)
+                for paired_condition in paired_conditions:
+                    paired_condition.apply_condition()
                 total_crit_damage = []
                 for damage_parcel in self.damage:
                     crit_damage = diceroll(damage_parcel[0]*2,damage_parcel[1],damage_parcel[2])
@@ -170,6 +211,8 @@ class Damage(Effect):
                     if possible: 
                         follow_value = creature.intelligence.choose_action([[follow_action]], [creature], [targets[0]], creature)
                         if follow_value[0][0][0] > 0: follow_action.act([targets[0]], creature)
+                for paired_condition in paired_conditions:
+                    paired_condition.unapply_condition()
 
 class Healing(Effect):
     
@@ -178,7 +221,7 @@ class Healing(Effect):
         self.healing_die_size = healing_die_size
         self.healing_modifier = healing_modifier
     
-    def apply(self, targets, result_list, creature):
+    def apply(self, targets, result_list, creature, saving_throw = False):
         amount = diceroll(self.healing_die_amount,self.healing_die_size,self.healing_modifier)
         for target in targets:
             target.recover_hit_points(amount)
@@ -189,12 +232,13 @@ class Apply_Condition(Effect):
         self.condition = condition
         self.concentration = concentration
         
-    def apply(self, targets, result_list, creature):
+    def apply(self, targets, result_list, creature, saving_throw = True):
         for i in range(len(targets)):
             if result_list[i] >=1:
-                creature.add_applied_condition(self.condition, self.concentration)
-                targets[i].add_condition(self.condition)
-                self.condition.add_caster_target(creature, targets[i])
+                new_condition = copy.deepcopy(self.condition)
+                creature.add_applied_condition(new_condition, self.concentration)
+                targets[i].add_condition(new_condition)
+                new_condition.add_caster_target(creature, targets[i])
 
 #class Basic_Attack(Action):
 #    
@@ -211,7 +255,7 @@ class Apply_Condition(Effect):
 #        #roll attack
 #        attack_roll = d20roll(self.attack_bonus,self.advantage)
 #        if attack_roll == 20 + self.attack_bonus:
-#            print('Critico!')
+#            logging.info('Critico!')
 #            hit = True
 #            damage = diceroll(2*self.damage_die_amount,self.damage_die_size,self.damage_modifier)
 #            target.take_damage(damage, self.damage_type)

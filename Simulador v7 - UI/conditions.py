@@ -1,5 +1,7 @@
 import action as act
 from diceroller import diceroll
+import logger
+import logging
 
 #End condition types:
 # Start of Caster Turn
@@ -12,7 +14,7 @@ from diceroller import diceroll
 
 class Condition:
 
-    def __init__(self, name, end_condition, max_duration, condition_effects, saving_throw = None):
+    def __init__(self, name, end_condition, max_duration, condition_effects, saving_throw = None, is_paired = False):
         self.name = name
         self.end_condition = end_condition
         self.max_duration = max_duration
@@ -22,13 +24,15 @@ class Condition:
         self.saving_throw = saving_throw
         self.caster = None
         self.target = None
+        self.is_paired = is_paired
+        self.applied = False
         
     def add_caster_target(self, caster, target):
         self.caster = caster
         self.target = target
         self.duration = self.max_duration
-        for effect in self.condition_effects:
-            effect.apply_effect(target)
+        if self.is_paired == False:
+            self.apply_condition()
         
     def notify_SoT(self, isCaster = True):
         if self.end_condition == "Start of Caster Turn" and isCaster:
@@ -39,6 +43,8 @@ class Condition:
             self.duration -= 1
         if self.duration <= 0:
             self.remove_condition()
+        if not isCaster and self.is_paired:
+            self.apply_condition()
             
     def notify_EoT(self, isCaster = True):
         if self.end_condition == "End of Caster Turn" and isCaster:
@@ -54,6 +60,8 @@ class Condition:
             if self.target.make_save(self.saving_throw[0], self.saving_throw[1]): self.remove_condition
         if self.duration <= 0:
             self.remove_condition()
+        if not isCaster and self.is_paired:
+            self.unapply_condition()
     
     def notify_damaged(self):
         if self.end_condition == "On Damage Taken":
@@ -61,10 +69,30 @@ class Condition:
         elif self.end_condition == "Repeat Save on Damage Taken":
             if self.target.make_save(self.saving_throw[0], self.saving_throw[1]): self.remove_condition
     
+    
+    def apply_condition(self):
+        if self.applied == False:
+            for effect in self.condition_effects:
+                if self.is_paired == True:
+                    effect.apply_effect(self.caster)
+                else:
+                    effect.apply_effect(self.target)
+            self.applied = True
+        
+    
+    def unapply_condition(self):
+        if self.applied == True:
+            for effect in self.condition_effects:
+                if self.is_paired == True:
+                    effect.remove_effect(self.caster)
+                else:
+                    effect.remove_effect(self.target)
+            self.applied = False
+        
+        
     def remove_condition(self):
-        print(f'Removing condition {self.name}')
-        for effect in self.condition_effects:
-            effect.remove_effect(self.target)
+        if self.applied == True:
+            self.unapply_condition()
         self.caster.remove_applied_condition(self)
         self.target.remove_condition(self)
     

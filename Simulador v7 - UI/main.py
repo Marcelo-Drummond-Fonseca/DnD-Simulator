@@ -7,6 +7,9 @@ from simulator import Simulator
 from creature import Creature
 from action import Action, Attack_Roll, Auto_Apply, Saving_Throw, Damage, Healing, Apply_Condition
 from conditions import Condition, Condition_Effect, Modified_Attack, Modified_Defense, Modified_Economy, Effect_Over_Time
+import logger
+import logging
+import time
 
 sg.theme('SystemDefaultForReal')
 ttk_style = 'vista'
@@ -71,9 +74,12 @@ def format_condition(condition):
         if condition['Damage Over Time']:
             damage_over_time = format_roll(condition['Damage Over Time Roll'])
         effectslist.append(Effect_Over_Time(damage_over_time, healing_over_time))
+    paired = False
+    if 'Paired Condition' in condition:
+        if condition['Paired Condition'] == 'True': paired = True
     if condition['Duration'] == 'Permanent':
-        return Condition(condition['Name'], 'Permanent', 9999, effectslist)
-    return Condition(condition['Name'], condition['End Type'], int(condition['Duration']), effectslist)
+        return Condition(condition['Name'], 'Permanent', 9999, effectslist, is_paired = paired)
+    return Condition(condition['Name'], condition['End Type'], int(condition['Duration']), effectslist, is_paired = paired)
         
 def format_action(action, creature):
     effect = None
@@ -104,7 +110,10 @@ def format_action(action, creature):
     if action['Action Type'] == 'Attack Roll':
         attempt = Attack_Roll(int(action['Attack Bonus']), effect)
     elif action['Action Type'] == 'Saving Throw':
-        attempt = Saving_Throw(int(action['Save DC']), saves_dict[action['Save Type']], True, effect)
+        half_on_save = True
+        if action['Effect'] == 'Damage':
+            if action['Half On Save'] == 'False': half_on_save = False
+        attempt = Saving_Throw(int(action['Save DC']), saves_dict[action['Save Type']], half_on_save, effect)
     elif action['Action Type'] == 'Auto Apply':
         attempt = Auto_Apply(effect)
     resourcecost = None
@@ -151,7 +160,9 @@ def format_creature(creature):
 
 #Function to run the simulations
 def run_simulation(team1, team2, iterations):
+    open('Battle Log.txt', 'w').close()
     #Formatting creatures
+    start = time.time()
     formatted_team1 = []
     formatted_team2 = []
     namelist = []
@@ -207,7 +218,7 @@ def run_simulation(team1, team2, iterations):
             else:
                 deaths_total[death] = 1
                 
-        print(f'Mortes: {deaths}')
+        logging.info(f'Mortes: {deaths}')
         
         #Incerteza
         uncertainty = 0
@@ -215,12 +226,12 @@ def run_simulation(team1, team2, iterations):
             if advantage_record[i] != advantage_record[i - 1]:
                 uncertainty += 1
         uncertainty = uncertainty/rounds
-        print(f'Incerteza: {uncertainty}')
+        logging.info(f'Incerteza: {uncertainty}')
         uncertainty_total += uncertainty
         
         #Duração
         duration_total += rounds
-        print(f'Duração: {rounds} rounds')
+        logging.info(f'Duração: {rounds} rounds')
         
         #Permanencia
         leader_rounds = 1
@@ -248,7 +259,7 @@ def run_simulation(team1, team2, iterations):
             permanency_team1 += permanency_amount/rounds
         elif permanency_leader == 2:
             permanency_team2 += permanency_amount/rounds
-        print(f'A maior permanência foi de {permanency_amount} rounds pelo time {permanency_leader}.\nPermanência de {100*permanency_amount/rounds}%')
+        logging.info(f'A maior permanência foi de {permanency_amount} rounds pelo time {permanency_leader}.\nPermanência de {100*permanency_amount/rounds}%')
         
         
         #Desafio
@@ -260,7 +271,7 @@ def run_simulation(team1, team2, iterations):
     
         #Vantagem Decisiva (da iteração)
         biggest_advantages.append([biggest_advantage,winner])
-        print(f'A maior vantagem foi de {biggest_advantage}\n')
+        logging.info(f'A maior vantagem foi de {biggest_advantage}\n')
         
     #Vantagem Decisiva (geral)
     biggest_positive_winner_2 = 0
@@ -273,14 +284,16 @@ def run_simulation(team1, team2, iterations):
     #if biggest_negative_winner_1 == 0: biggest_negative_winner_1 = 1
     #if biggest_positive_winner_2 == 0: biggest_positive_winner_2 = 1
     
-    print('Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
-    print(f'Duração média: {duration_total/iterations} rounds')
-    print(f'mortes (totais): {deaths_total}')
-    print(f'Incerteza média: {uncertainty_total/iterations}')
-    print(f'Permanencia média do time 1: {permanency_team1/iterations}')
-    print(f'Permanencia média do time 2: {permanency_team2/iterations}')
-    print(f'Vantagem Decisiva para time 1: {biggest_positive_winner_2}')
-    print(f'Vantagem Decisiva para time 2: {abs(biggest_negative_winner_1)}')
+    logging.info('Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
+    logging.info(f'Duração média: {duration_total/iterations} rounds')
+    logging.info(f'mortes (totais): {deaths_total}')
+    logging.info(f'Incerteza média: {uncertainty_total/iterations}')
+    logging.info(f'Permanencia média do time 1: {permanency_team1/iterations}')
+    logging.info(f'Permanencia média do time 2: {permanency_team2/iterations}')
+    logging.info(f'Vantagem Decisiva para time 1: {biggest_positive_winner_2}')
+    logging.info(f'Vantagem Decisiva para time 2: {abs(biggest_negative_winner_1)}')
+    end = time.time()
+    logging.info(f'Tempo de execução: {end-start}')
     return 'Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
     
 
@@ -370,7 +383,7 @@ layout_creature_combos = [
     [sg.Text("Combos")],
     [sg.Input(size=(30,1), key='_COMBONAME_', justification='left', enable_events=True)],
     [sg.Button('Add Combo', use_ttk_buttons=True), sg.Button('Delete Combo', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 5), key='_ComboList_')]
+    [sg.Listbox(values=[], size=(50, 20), key='_ComboList_')]
 
 ]
 
@@ -430,6 +443,7 @@ layout_condition_statistics = [
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CONDITIONNAME_', justification='left', enable_events=True)],
     [sg.Text("Duration", size=(8,1)), sg.DropDown([1,2,10,100,'Permanent'], size=(5,1), key='_DURATION_'), 
     sg.Text('Turns, ends on', size=(14,1)), sg.DropDown(values=condition_end_possibilities, key='_ENDTYPE_')],
+    [sg.Text("Paired Condition?"), sg.DropDown(values=['True','False'], size=(5,1), key='_PAIREDCONDITION_')],
 ]
 
 layout_condition_offenses = [
@@ -514,6 +528,7 @@ layout_action_effects = [
     [sg.pin(sg.Text("Save DC", size=(8, 1), key='_SAVEONLYDC_', visible=False)), sg.pin(sg.Input(size=(2, 1), key='_SAVEDC_', justification='left', enable_events=True, visible=False))],
     [sg.pin(sg.Text("Save Type", size=(8, 1), key='_SAVEONLYTYPE_', visible=False)), sg.pin(sg.Combo(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'], size=(5, 1), key='_SAVETYPE_', visible=False))],
     [sg.Text("Effect", size=(8, 1)), sg.Combo(['Damage', 'Healing', 'Apply Condition'], size=(12, 1), key='_EFFECT_', enable_events=True)],
+    [sg.pin(sg.Text("Half on Save?", key='_HALFONSAVETEXT_', visible=False)), sg.pin(sg.DropDown(['True','False'], size=(5,1), key='_HALFONSAVE_', visible=False))],
     [sg.pin(sg.Text("Damage (XdY+Z)", size=(13, 1), key='_DAMAGEONLY_', visible=False)), sg.pin(sg.Input(size=(10, 1), key='_DAMAGEROLL_', justification='left', enable_events=True, visible=False))],
     [sg.pin(sg.Text("Damage Type", size=(11, 1), key='_DAMAGEONLY_', visible=False)), sg.pin(sg.Combo(values=damage_types, key='_DAMAGETYPE_', enable_events=True, visible=False))],
     [sg.pin(sg.Button('Add Damage', use_ttk_buttons=True, visible=False, key='_ADDDAMAGE_')), sg.pin(sg.Button('Delete Damage', use_ttk_buttons=True, visible=False, key='_DELETEDAMAGE_'))],
@@ -685,7 +700,8 @@ base_condition_data = {
     'Reaction Modifier': '0',
     'Damage Over Time Roll': '',
     'Damage Over Time Type': '',
-    'Healing Over Time': ''
+    'Healing Over Time': '',
+    'Paired Condition': 'False'
 }    
 
 condition_data = {
@@ -709,7 +725,8 @@ condition_data = {
     'Reaction Modifier': None,
     'Damage Over Time Roll': None,
     'Damage Over Time Type': None,
-    'Healing Over Time': None
+    'Healing Over Time': None,
+    'Paired Condition': None
 }
 
 def update_condition(condition_data):
@@ -735,6 +752,8 @@ def update_condition(condition_data):
     window['_DAMAGEOVERTIMEROLL_'].update(condition_data['Damage Over Time Roll'])
     window['_DAMAGEOVERTIMETYPE_'].update(condition_data['Damage Over Time Type'])
     window['_HEALINGOVERTIMEROLL_'].update(condition_data['Healing Over Time'])
+    if 'Paired Condition' in condition_data: window['_PAIREDCONDITION_'].update(condition_data['Paired Condition'])
+    else: window['_PAIREDCONDITION_'].update('False')
 
 def update_condition_data(values):
     condition_data['Name'] = values['_CONDITIONNAME_']
@@ -758,6 +777,7 @@ def update_condition_data(values):
     condition_data['Damage Over Time Roll'] = values['_DAMAGEOVERTIMEROLL_']
     condition_data['Damage Over Time Type'] = values['_DAMAGEOVERTIMETYPE_']
     condition_data['Healing Over Time'] = values['_HEALINGOVERTIMEROLL_']
+    condition_data['Paired Condition'] = values['_PAIREDCONDITION_']
 
 base_action_data = {
     'Name': 'New Action',
@@ -770,10 +790,11 @@ base_action_data = {
     'Attack Bonus': '',
     'Save DC': '',
     'Save Type': '',
+    'Half On Save': 'True',
     'Damage': [],
     'Healing Roll': '',
     'Conditions': [],
-    'Concentration': False,
+    'Concentration': 'False',
     'Follow Actions': [],
     'Follow Action': ''
 }
@@ -789,6 +810,7 @@ action_data = {
     'Attack Bonus': None,
     'Save DC': None,
     'Save Type': None,
+    'Half On Save': None,
     'Damage': [],
     'Healing Roll': None,
     'Conditions': [],
@@ -808,6 +830,7 @@ def update_action(action_data):
     window['_ATTACKBONUS_'].update(action_data['Attack Bonus'])
     window['_SAVEDC_'].update(action_data['Save DC'])
     window['_SAVETYPE_'].update(action_data['Save Type'])
+    if 'Half On Save' in action_data: window['_HALFONSAVE_'].update(action_data['Half On Save'])
     if 'Damage' in action_data:
         window['_DamageList_'].update(action_data['Damage'])
     else:
@@ -828,6 +851,7 @@ def update_action_data(values):
     action_data['Attack Bonus'] = values['_ATTACKBONUS_']
     action_data['Save DC'] = values['_SAVEDC_']
     action_data['Save Type'] = values['_SAVETYPE_']
+    action_data['Half On Save'] = values['_HALFONSAVE_']
     action_data['Damage'] = window['_DamageList_'].get_list_values()
     action_data['Healing Roll'] = values['_HEALINGROLL_']
     action_data['Conditions'] = window['_ConditionList_'].get_list_values()
@@ -837,7 +861,7 @@ def update_action_data(values):
 simulation_data = {
     'Team1': [],
     'Team2': [],
-    'Repetitions': 100
+    'Repetitions': 1000
 }
 
 
@@ -1235,6 +1259,8 @@ while True:
         window['_SAVEDC_'].update(visible=action_data['Action Type'] == 'Saving Throw')
         window['_SAVEONLYTYPE_'].update(visible=action_data['Action Type'] == 'Saving Throw')
         window['_SAVETYPE_'].update(visible=action_data['Action Type'] == 'Saving Throw')
+        window['_HALFONSAVETEXT_'].update(visible=(action_data['Action Type'] == 'Saving Throw' and action_data['Effect'] == 'Damage'))
+        window['_HALFONSAVE_'].update(visible=(action_data['Action Type'] == 'Saving Throw' and action_data['Effect'] == 'Damage'))
         window['_DAMAGEONLY_'].update(visible=action_data['Effect'] == 'Damage')
         window['_DAMAGEROLL_'].update(visible=action_data['Effect'] == 'Damage')
         window['_DAMAGETYPE_'].update(visible=action_data['Effect'] == 'Damage')
@@ -1255,6 +1281,8 @@ while True:
         window['_SAVEDC_'].update(visible=values['_ACTIONTYPE_'] == 'Saving Throw')
         window['_SAVEONLYTYPE_'].update(visible=values['_ACTIONTYPE_'] == 'Saving Throw')
         window['_SAVETYPE_'].update(visible=values['_ACTIONTYPE_'] == 'Saving Throw')
+        window['_HALFONSAVETEXT_'].update(visible=(values['_ACTIONTYPE_'] == 'Saving Throw' and values['_EFFECT_'] == 'Damage'))
+        window['_HALFONSAVE_'].update(visible=(values['_ACTIONTYPE_'] == 'Saving Throw' and values['_EFFECT_'] == 'Damage'))
     elif event == '_EFFECT_':
         window['_DAMAGEONLY_'].update(visible=values['_EFFECT_'] == 'Damage')
         window['_DAMAGEROLL_'].update(visible=values['_EFFECT_'] == 'Damage')

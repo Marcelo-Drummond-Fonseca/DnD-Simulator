@@ -1,5 +1,7 @@
 import action as act
 from math import floor
+import logger
+import logging
 
 class Intelligence:
 
@@ -18,7 +20,7 @@ class Intelligence:
                 final_multiplier = 1
                 if action.is_concentration == True:
                     if creature.applied_conditions['Concentration']:
-                        final_multiplier *= 0.5
+                        final_multiplier *= 0.25
                     else:
                         final_multiplier *= 1.1
                 action_score = []
@@ -27,7 +29,6 @@ class Intelligence:
                     final_multiplier *= self.modifiers['damage_favor']
                     for enemy in enemy_team:
                         target_multiplier = self.target_modifiers[enemy.AI_type]
-                        print(action.attempt.effect.damage)
                         avg_damage = [d[0]*((d[1]+1)/2)+d[2] for d in action.attempt.effect.damage]
                         #Attack Roll
                         if isinstance(action.attempt, act.Attack_Roll):
@@ -73,8 +74,11 @@ class Intelligence:
                     if action.target_type == 'Self':
                         final_multiplier *= self.modifiers['self_buff_favor']
                         target_multiplier = self.target_modifiers[creature.AI_type]
-                        if action.attempt.effect.condition in creature.conditions:
-                            action_score.append(0)
+                        if action.attempt.effect.condition.name in [condition.name for condition in creature.conditions] and action.attempt.effect.condition.duration>1:
+                            if action.resource_cost:
+                                action_score.append(-999)
+                            else:
+                                action_score.append(0)
                         else:
                             action_score.append(creature.HP/2 * final_multiplier * target_multiplier)
                     
@@ -83,8 +87,11 @@ class Intelligence:
                         final_multiplier *= self.modifiers['ally_buff_favor']
                         for ally in allied_team:
                             target_multiplier = self.target_modifiers[ally.AI_type]
-                            if action.attempt.effect.condition in ally.conditions:
-                                action_score.append(0)
+                            if action.attempt.effect.condition.name in [condition.name for condition in ally.conditions] and action.attempt.effect.condition.duration>1:
+                                if action.resource_cost:
+                                    action_score.append(-999)
+                                else:
+                                    action_score.append(0)
                             else:
                                 action_score.append(ally.HP/2 * final_multiplier * target_multiplier)
                             
@@ -93,13 +100,15 @@ class Intelligence:
                         final_multiplier *= self.modifiers['debuff_favor']
                         for enemy in enemy_team:
                             target_multiplier = self.target_modifiers[enemy.AI_type]
-                            if action.attempt.effect.condition in enemy.conditions:
-                                action_score.append(0)
+                            if action.attempt.effect.condition.name in [condition.name for condition in enemy.conditions] and action.attempt.effect.condition.duration>1:
+                                if action.resource_cost:
+                                    action_score.append(-999)
+                                else:
+                                    action_score.append(0)
                             else:
                                 action_score.append(enemy.HP/2 * final_multiplier * target_multiplier)
                 
                 combo_score.append(action_score)
-                print(action.name, action_score)
             final_scores.append(combo_score)
         return final_scores
             

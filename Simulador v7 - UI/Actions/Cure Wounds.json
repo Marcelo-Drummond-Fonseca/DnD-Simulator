@@ -1,0 +1,1 @@
+{"Name": "Cure Wounds", "Action Speed": "Action", "Number of Targets": "1", "Target Type": "Ally", "Resource Cost": [{"Name": "Spell Slot 1", "Number": "1"}], "Action Type": "Auto Apply", "Effect": "Healing", "Attack Bonus": "", "Save DC": "", "Save Type": "", "Damage": [], "Healing Roll": "1d8+6", "Conditions": [], "Concentration": "0", "Follow Actions": [], "Follow Action": ""}
