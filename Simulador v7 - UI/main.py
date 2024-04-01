@@ -56,14 +56,16 @@ def format_condition(condition):
         if condition['Extra Damage Roll'] and condition['Extra Damage Type']:
             extra_damage = format_roll(condition['Extra Damage Roll']).append(condition['Extra Damage Type'])
         effectslist.append(Modified_Attack(int(condition['Attack Modifier']), int(condition['Damage Modifier']), advantage, extra_damage = extra_damage, crit_threshold = int(condition['Crits On'])))
-    if condition['AC Modifier'] or condition['Defense Advantage'] or condition['Saves Modifier'] or condition['Saves Advantage'] or condition['Resistances'] or condition['Auto Crit'] == "True":
+    if condition['AC Modifier'] or condition['Defense Advantage'] or condition['Saves Modifier'] or condition['Saves Advantage'] or condition['Resistances'] or condition['Auto Crit'] == "True" or condition['Evasion']:
         if condition['Defense Advantage'] == 'Advantage': advantage = 1
         elif condition['Defense Advantage'] == 'Disadvantage': advantage = -1
         else: advantage = 0
         resistances = {}
         for resistance in condition['Resistances']:
             resistances[resistance[0]] = damage_multiplier[resistance[1]]
-        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), condition['Saves Advantage'], resistances, auto_crit = condition['Auto Crit'] == 'True'))
+        if not 'Evasion' in condition:
+            condition['Evasion'] = ['False','False','False','False','False','False']
+        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), condition['Saves Advantage'], resistances, auto_crit = condition['Auto Crit'] == 'True', evasion=list(map(lambda x: x == 'True', condition['Evasion']))))
     if condition['Action Modifier'] or condition['Bonus Action Modifier'] or condition['Reaction Modifier']:
         effectslist.append(Modified_Economy(int(condition['Action Modifier']), int(condition['Bonus Action Modifier']), int(condition['Reaction Modifier'])))
     if condition['Damage Over Time Roll'] or condition['Healing Over Time']:
@@ -71,8 +73,8 @@ def format_condition(condition):
         healing_over_time = []
         if condition['Healing Over Time']:
             healing_over_time = format_roll(condition['Healing Over Time'])
-        if condition['Damage Over Time']:
-            damage_over_time = format_roll(condition['Damage Over Time Roll'])
+        if condition['Damage Over Time Roll']:
+            damage_over_time = format_roll(condition['Damage Over Time Roll']).append(condition['Damage Over Time Type'])
         effectslist.append(Effect_Over_Time(damage_over_time, healing_over_time))
     paired = False
     if 'Paired Condition' in condition:
@@ -281,8 +283,13 @@ def run_simulation(team1, team2, iterations):
             biggest_positive_winner_2 = biggest_advantage
         elif winner == 1 and biggest_advantage < biggest_negative_winner_1:
             biggest_negative_winner_1 = biggest_advantage
-    #if biggest_negative_winner_1 == 0: biggest_negative_winner_1 = 1
-    #if biggest_positive_winner_2 == 0: biggest_positive_winner_2 = 1
+    guaranteed_wins_1 = [biggest_advantage for biggest_advantage, winner in biggest_advantages if (biggest_advantage > biggest_positive_winner_2 and winner == 1)]
+    guaranteed_wins_2 = [biggest_advantage for biggest_advantage, winner in biggest_advantages if (biggest_advantage < biggest_negative_winner_1 and winner == 2)]
+    decisive_advantage_1 = 'N/A'
+    decisive_advantage_2 = 'N/A'
+    if guaranteed_wins_1: decisive_advantage_1 = min(guaranteed_wins_1)
+    if guaranteed_wins_2: decisive_advantage_2 = max(guaranteed_wins_2)
+        
     
     logging.info('Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
     logging.info(f'Duração média: {duration_total/iterations} rounds')
@@ -290,8 +297,8 @@ def run_simulation(team1, team2, iterations):
     logging.info(f'Incerteza média: {uncertainty_total/iterations}')
     logging.info(f'Permanencia média do time 1: {permanency_team1/iterations}')
     logging.info(f'Permanencia média do time 2: {permanency_team2/iterations}')
-    logging.info(f'Vantagem Decisiva para time 1: {biggest_positive_winner_2}')
-    logging.info(f'Vantagem Decisiva para time 2: {abs(biggest_negative_winner_1)}')
+    logging.info(f'Vantagem Decisiva para time 1: {decisive_advantage_1}')
+    logging.info(f'Vantagem Decisiva para time 2: {decisive_advantage_2}')
     end = time.time()
     logging.info(f'Tempo de execução: {end-start}')
     return 'Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
@@ -461,12 +468,12 @@ layout_condition_defenses = [
     sg.Text("Attacks against made at", size=(23,1)), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_DEFENSEADVANTAGE_')],
     [sg.Text("Auto crit?", size=(10,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_AUTOCRIT_')],
     [sg.Text("Saving Throw Modifiers", size=(21,1))],
-    [sg.Text("STR", size=(3,1)), sg.Input(size=(3,1), key='_ST1MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST1ADVANTAGE_')],
-    [sg.Text("DEX", size=(3,1)), sg.Input(size=(3,1), key='_ST2MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST2ADVANTAGE_')],
-    [sg.Text("CON", size=(3,1)), sg.Input(size=(3,1), key='_ST3MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST3ADVANTAGE_')],
-    [sg.Text("INT", size=(3,1)), sg.Input(size=(3,1), key='_ST4MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST4ADVANTAGE_')],
-    [sg.Text("WIS", size=(3,1)), sg.Input(size=(3,1), key='_ST5MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST5ADVANTAGE_')],
-    [sg.Text("CHA", size=(3,1)), sg.Input(size=(3,1), key='_ST6MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST6ADVANTAGE_')],
+    [sg.Text("STR", size=(3,1)), sg.Input(size=(3,1), key='_ST1MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST1ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST1EVASION_')],
+    [sg.Text("DEX", size=(3,1)), sg.Input(size=(3,1), key='_ST2MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST2ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST2EVASION_')],
+    [sg.Text("CON", size=(3,1)), sg.Input(size=(3,1), key='_ST3MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST3ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST3EVASION_')],
+    [sg.Text("INT", size=(3,1)), sg.Input(size=(3,1), key='_ST4MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST4ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST4EVASION_')],
+    [sg.Text("WIS", size=(3,1)), sg.Input(size=(3,1), key='_ST5MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST5ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST5EVASION_')],
+    [sg.Text("CHA", size=(3,1)), sg.Input(size=(3,1), key='_ST6MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST6ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST6EVASION_')],
     [sg.Text("Resistances/Immunities/Vulnerabilities")],
     [sg.DropDown(values=damage_types, key='_DAMAGETYPERESISTANCEMOD_'), sg.Combo(values=['Resistance','Immunity','Vulnerability'], key='_RESISTANCETYPEMOD_')],
     [sg.Button('Add Resistance/Vulnerability/Immunity Modifier', use_ttk_buttons=True), sg.Button('Delete Resistance/Vulnerability/Immunity Modifier', use_ttk_buttons=True)],
@@ -567,8 +574,9 @@ layout_actions = [
 
 
 layout_simulator = [
-    [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2')],
     [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True)],
+    [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2')],
+    [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2')],
     [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
     [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')]
 ]
@@ -701,7 +709,8 @@ base_condition_data = {
     'Damage Over Time Roll': '',
     'Damage Over Time Type': '',
     'Healing Over Time': '',
-    'Paired Condition': 'False'
+    'Paired Condition': 'False',
+    'Evasion': ['False','False','False','False','False','False']
 }    
 
 condition_data = {
@@ -726,7 +735,8 @@ condition_data = {
     'Damage Over Time Roll': None,
     'Damage Over Time Type': None,
     'Healing Over Time': None,
-    'Paired Condition': None
+    'Paired Condition': None,
+    'Evasion': [None,None,None,None,None,None]
 }
 
 def update_condition(condition_data):
@@ -745,6 +755,8 @@ def update_condition(condition_data):
     for i in range(1, 7):
         window[f'_ST{i}MOD_'].update(condition_data['Saves Modifier'][i-1])
         window[f'_ST{i}ADVANTAGE_'].update(condition_data['Saves Advantage'][i-1])
+        if 'Evasion' in condition_data: window[f'_ST{i}EVASION_'].update(condition_data['Evasion'][i-1])
+        else: window[f'_ST{i}EVASION_'].update('False')
     window['_ResistanceModList_'].update(condition_data['Resistances'])
     window['_ACTIONMOD_'].update(condition_data['Action Modifier'])
     window['_BONUSACTIONMOD_'].update(condition_data['Bonus Action Modifier'])
@@ -770,6 +782,7 @@ def update_condition_data(values):
     condition_data['Auto Crit'] = values['_AUTOCRIT_']
     condition_data['Saves Modifier'] = [values[f'_ST{i}MOD_'] for i in range(1, 7)]
     condition_data['Saves Advantage'] = [values[f'_ST{i}ADVANTAGE_'] for i in range(1, 7)]
+    condition_data['Evasion'] = [values[f'_ST{i}EVASION_'] for i in range(1, 7)]
     condition_data['Resistances'] = window['_ResistanceModList_'].get_list_values()
     condition_data['Action Modifier'] = values['_ACTIONMOD_']
     condition_data['Bonus Action Modifier'] = values['_BONUSACTIONMOD_']
@@ -1132,7 +1145,7 @@ while True:
     elif event == '_DELETECREATURECONDITION_' and values['_CreatureConditionList_']:
         selected_condition = values['_CreatureConditionList_'][0]
         condition_data = window['_CreatureConditionList_'].get_list_values()
-        condition_data.remove(selected_action)
+        condition_data.remove(selected_condition)
         window['_CreatureConditionList_'].update(condition_data)    
     
     elif event == 'Add Combo':
@@ -1371,17 +1384,36 @@ while True:
     
     #Simulator Events
     elif event == 'Add Creature 1':
-        filename = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),))
-        if filename:
-            creature_data = load(filename)
-            simulation_data['Team1'].append(creature_data)
-            window['_TEAM1_'].update(simulation_data['Team1'])
+        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
+        if filenames:
+            filename_list = filenames.split(";")
+            for filename in filename_list:
+                creature_data = load(filename)
+                simulation_data['Team1'].append(creature_data)
+                window['_TEAM1_'].update(simulation_data['Team1'])
     elif event == 'Add Creature 2':
-        filename = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),))
-        if filename:
-            creature_data = load(filename)
-            simulation_data['Team2'].append(creature_data)
-            window['_TEAM2_'].update(simulation_data['Team2'])
+        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
+        if filenames:
+            filename_list = filenames.split(";")
+            for filename in filename_list:
+                creature_data = load(filename)
+                simulation_data['Team2'].append(creature_data)
+                window['_TEAM2_'].update(simulation_data['Team2'])
+            
+    elif event == 'Remove Creature 1' and values['_TEAM1_']:
+        selected_creature = values['_TEAM1_'][0]
+        team_data = window['_TEAM1_'].get_list_values()
+        team_data.remove(selected_creature)
+        window['_TEAM1_'].update(team_data)
+        simulation_data['Team1'] = window['_TEAM1_'].get_list_values()
+    
+    elif event == 'Remove Creature 2' and values['_TEAM2_']:
+        selected_creature = values['_TEAM2_'][0]
+        team_data = window['_TEAM2_'].get_list_values()
+        team_data.remove(selected_creature)
+        window['_TEAM2_'].update(team_data)  
+        simulation_data['Team2'] = window['_TEAM2_'].get_list_values()      
+            
     elif event == 'Simulate':
         winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Repetitions'])
         window['_SIMULATIONRESULTS_'].update(winratetext)

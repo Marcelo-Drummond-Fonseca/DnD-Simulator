@@ -63,11 +63,11 @@ class Attack_Roll(Attempt):
             for paired_condition in paired_conditions:
                 paired_condition.apply_condition()
             attack_roll = d20roll(self.attack_bonus,int(self.advantage + target.AC_advantage >0) - int(self.disadvantage + target.AC_disadvantage>0))
-            if attack_roll >= creature.crits_on + self.attack_bonus or target.auto_crit == True:
+            hit = target.check_hit(attack_roll)
+            if (attack_roll >= creature.crits_on + self.attack_bonus) or (target.auto_crit == True and hit == True):
                 logging.info('Critico!')
                 result_list.append(2)
             else:
-                hit = target.check_hit(attack_roll)
                 if hit == True:
                     result_list.append(1)
                 else:

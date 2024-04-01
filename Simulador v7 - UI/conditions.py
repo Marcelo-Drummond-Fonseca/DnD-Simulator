@@ -35,7 +35,7 @@ class Condition:
             self.apply_condition()
         
     def notify_SoT(self, isCaster = True):
-        if self.end_condition == "Start of Caster Turn" and isCaster:
+        if (self.end_condition == "Start of Caster Turn" or self.end_condition == "On Damage Taken") and isCaster:
             self.duration -= 1
         elif self.end_condition == "Start of Target Turn" and not isCaster:
             for effect in self.condition_effects:
@@ -57,7 +57,7 @@ class Condition:
             for effect in self.condition_effects:
                 effect.notify_EoT(self.target)
             self.duration -= 1
-            if self.target.make_save(self.saving_throw[0], self.saving_throw[1]): self.remove_condition
+            if self.target.make_save(self.saving_throw[0], self.saving_throw[1]): self.remove_condition()
         if self.duration <= 0:
             self.remove_condition()
         if not isCaster and self.is_paired:
@@ -152,7 +152,7 @@ class Modified_Attack(Condition_Effect):
 
 class Modified_Defense(Condition_Effect):
 
-    def __init__(self, AC_bonus = 0, ac_advantage = 0, save_bonus = [0,0,0,0,0,0], save_advantage = [0,0,0,0,0,0], damage_type_multipliers = {}, damage_type_reductions = {}, auto_crit = False):
+    def __init__(self, AC_bonus = 0, ac_advantage = 0, save_bonus = [0,0,0,0,0,0], save_advantage = [0,0,0,0,0,0], damage_type_multipliers = {}, damage_type_reductions = {}, auto_crit = False, evasion = [False,False,False,False,False,False]):
         self.AC_bonus = AC_bonus
         self.save_bonus = save_bonus
         self.ac_advantage = ac_advantage
@@ -160,6 +160,7 @@ class Modified_Defense(Condition_Effect):
         self.damage_type_multipliers = damage_type_multipliers
         self.damage_type_reductions = damage_type_reductions
         self.auto_crit = auto_crit
+        self.evasion = evasion
     
     def apply_effect(self, target):
         target.AC += self.AC_bonus
@@ -175,9 +176,10 @@ class Modified_Defense(Condition_Effect):
             elif target.save_advantage[i] == -1:
                 target.save_disadvantage[i] += 1
         for damage_type, damage_multiplier in self.damage_type_multipliers.items():
-            target.damage_type_multipliers[damage_type] = damage_multiplier
+            target.add_damage_type_multiplier(damage_type, damage_multiplier)
         for damage_type, damage_reduction in self.damage_type_reductions.items():
             target.damage_type_reductions[damage_type] = damage_reduction
+        target.evasion = self.evasion
             
     def remove_effect(self, target):
         target.AC -= self.AC_bonus
@@ -193,9 +195,10 @@ class Modified_Defense(Condition_Effect):
             elif target.save_advantage[i] == -1:
                 target.save_disadvantage[i] -= 1
         for damage_type, damage_multiplier in self.damage_type_multipliers.items():
-            del target.damage_type_multipliers[damage_type]
+            target.remove_damage_type_multiplier(damage_type, damage_multiplier)
         for damage_type, damage_reduction in self.damage_type_reductions.items():
-            del target.damage_type_reductions[damage_type]
+            if damage_type in target.damage_type_reductions: del target.damage_type_reductions[damage_type]
+        target.evasion = ['False','False','False','False','False','False']
         
             
 class Modified_Economy(Condition_Effect):
@@ -222,13 +225,13 @@ class Effect_Over_Time(Condition_Effect):
         
     def notify_SoT(self,target):
         if self.damage:
-            target.take_damage(diceroll(self.damage[0],self.damage[1],self.damage[2]),self.damage_3)
+            target.take_damage(diceroll(self.damage[0],self.damage[1],self.damage[2]),self.damage[3])
         if self.healing:
             target.recover_hit_points(diceroll(self.healing[0],self.healing[1],self.healing[2]))
         
     def notify_EoT(self,target):
         if self.damage:
-            target.take_damage(diceroll(self.damage[0],self.damage[1],self.damage[2]),self.damage_3)
+            target.take_damage(diceroll(self.damage[0],self.damage[1],self.damage[2]),self.damage[3])
         if self.healing:
             target.recover_hit_points(diceroll(self.healing[0],self.healing[1],self.healing[2]))
     

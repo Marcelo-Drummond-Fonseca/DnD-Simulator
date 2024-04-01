@@ -85,7 +85,9 @@ class Creature:
         self.action_number = 1
         self.bonus_action_number = 1
         self.reaction_number = 1
-        self.damage_type_multipliers = {}
+        self.damage_type_resistance = {}
+        self.damage_type_vulnerability = {}
+        self.damage_type_immunity = {}
         self.damage_type_reductions = {}
         self.max_resources = {}
         self.current_resources = {}
@@ -131,9 +133,42 @@ class Creature:
         self.combos.append(new_combo)
                     
     
-    def add_damage_type_multiplier(self, damage_type, multiplier):
-        self.damage_type_multipliers[damage_type] = multiplier
+    def get_damage_type_multiplier(self, damage_type):
+        damage_multiplier = 1
+        if damage_type in self.damage_type_immunity: damage_multiplier = 0
+        if damage_type in self.damage_type_resistance: damage_multiplier *= 0.5
+        if damage_type in self.damage_type_vulnerability: damage_multiplier *= 2
+        return damage_multiplier
         
+    
+    def add_damage_type_multiplier(self, damage_type, multiplier):
+        if multiplier == 0:
+            if damage_type in self.damage_type_immunity: self.damage_type_immunity[damage_type] += 1
+            else: self.damage_type_immunity[damage_type] = 1
+        if multiplier == 0.5:
+            if damage_type in self.damage_type_resistance: self.damage_type_resistance[damage_type] += 1
+            else: self.damage_type_resistance[damage_type] = 1
+        if multiplier == 2:
+            if damage_type in self.damage_type_vulnerability: self.damage_type_vulnerability[damage_type] += 1
+            else: self.damage_type_vulnerability[damage_type] = 1
+        
+    def remove_damage_type_multiplier(self, damage_type, multiplier):
+        if multiplier == 0:
+            if damage_type in self.damage_type_immunity: 
+                self.damage_type_immunity[damage_type] -= 1
+                if self.damage_type_immunity[damage_type] == 0:
+                    del self.damage_type_immunity[damage_type]
+        if multiplier == 0.5:
+            if damage_type in self.damage_type_resistance: 
+                self.damage_type_resistance[damage_type] -= 1
+                if self.damage_type_resistance[damage_type] == 0:
+                    del self.damage_type_resistance[damage_type]
+        if multiplier == 2:
+            if damage_type in self.damage_type_vulnerability: 
+                self.damage_type_vulnerability[damage_type] -= 1
+                if self.damage_type_vulnerability[damage_type] == 0:
+                    del self.damage_type_vulnerability[damage_type]
+    
     def add_resource(self, resource_type, resource_amount, regain_type):
         self.max_resources[resource_type] = resource_amount
         self.current_resources[resource_type] = resource_amount
@@ -151,7 +186,10 @@ class Creature:
             condition.remove_condition()
         for condition in self.applied_conditions['Non-Concentration']:
             condition.remove_condition()
-        
+    
+    def remove_self_conditions(self):
+        for condition in self.conditions:
+            condition.remove_condition()
     
     def full_restore(self):
         self.HP = self.MHP
@@ -363,16 +401,17 @@ class Creature:
         for damage_tuple in total_damage:
             damage = damage_tuple[0]
             damage_type = damage_tuple[1]
-            if self.damage_type_multipliers.get(damage_type):
-                logging.info(f'dano modificado de {damage} para {floor(damage*self.damage_type_multipliers.get(damage_type))} devido a resistencias/fraquezas/imunidades')
-                damage = floor(damage*self.damage_type_multipliers.get(damage_type))
+            damage_multiplier = self.get_damage_type_multiplier(damage_type)
+            if damage_multiplier != 1:
+                logging.info(f'dano modificado de {damage} para {max(1,floor(damage*damage_multiplier))} devido a resistencias/fraquezas/imunidades')
+                damage = max(1,floor(damage*damage_multiplier))
             self.HP -= damage
             logging.info(f'{self.name} toma {damage} de dano. está agora com {self.HP} de vida')
             total_damage_taken += damage
             if not self.is_alive():
                 logging.info(f'{self.name} morreu')
                 self.simulator.notify_death(self,self.team)
-                self.remove_all_conditions()
+                self.remove_self_conditions()
                 self.lose_concentration()
                 return False
         if total_damage_taken > 0 and self.applied_conditions["Concentration"]:
