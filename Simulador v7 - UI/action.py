@@ -106,10 +106,14 @@ class Saving_Throw(Attempt):
                 paired_condition.apply_condition()
             target_has_evasion = target.evasion[self.save_type]
             passed = target.make_save(self.save_DC,self.save_type)
-            if passed == False and not (target_has_evasion and self.half_on_save):
-                result_list.append(1)
-            elif ((passed == True and self.half_on_save) or (passed == False and target_has_evasion and self.half_on_save)):
-                result_list.append(0)
+            if passed == False:
+                if (target_has_evasion == True and self.half_on_save):
+                    result_list.append(0)
+                else: result_list.append(1)
+            elif passed == True:
+                if (target_has_evasion == True and self.half_on_save):
+                    result_list.append(-1)
+                else: result_list.append(0)
             else:
                 result_list.append(-1)
             for paired_condition in paired_conditions:

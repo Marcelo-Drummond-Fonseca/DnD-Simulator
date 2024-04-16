@@ -71,7 +71,8 @@ class Simulator:
                 'advantage_record': self.advantage_record,
                 'biggest_advantage': self.biggest_advantage,
                 'scores': self.scores,
-                'deaths': self.deaths
+                'deaths': self.deaths,
+                'HP percent': sum(creature.HP for creature in self.team1)/self.team1mhp
             }
             return(response)
         elif self.team2:
@@ -83,7 +84,8 @@ class Simulator:
                 'advantage_record': self.advantage_record,
                 'biggest_advantage': self.biggest_advantage,
                 'scores': self.scores,
-                'deaths': self.deaths
+                'deaths': self.deaths,
+                'HP percent': sum(creature.HP for creature in self.team2)/self.team2mhp
             }
             return(response)
             

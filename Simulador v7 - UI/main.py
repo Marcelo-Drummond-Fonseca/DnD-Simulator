@@ -47,7 +47,6 @@ def format_roll(roll):
 #Function to format conditions from the interface to the simulator.
 def format_condition(condition):
     effectslist = []
-    print(condition['Name'])
     if condition['Attack Modifier'] or condition['Attack Advantage'] or condition['Damage Modifier'] or condition['Crits On'] != 20 or condition['Extra Damage Roll']:
         if condition['Attack Advantage'] == 'Advantage': advantage = 1
         elif condition['Attack Advantage'] == 'Disadvantage': advantage = -1
@@ -60,12 +59,13 @@ def format_condition(condition):
         if condition['Defense Advantage'] == 'Advantage': advantage = 1
         elif condition['Defense Advantage'] == 'Disadvantage': advantage = -1
         else: advantage = 0
+        saves_advantage = [1 if adv == "Advantage" else -1 if adv == "Disadvantage" else 0 for adv in condition['Saves Advantage']]
         resistances = {}
         for resistance in condition['Resistances']:
             resistances[resistance[0]] = damage_multiplier[resistance[1]]
         if not 'Evasion' in condition:
             condition['Evasion'] = ['False','False','False','False','False','False']
-        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), condition['Saves Advantage'], resistances, auto_crit = condition['Auto Crit'] == 'True', evasion=list(map(lambda x: x == 'True', condition['Evasion']))))
+        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), saves_advantage, resistances, auto_crit = condition['Auto Crit'] == 'True', evasion=list(map(lambda x: x == 'True', condition['Evasion']))))
     if condition['Action Modifier'] or condition['Bonus Action Modifier'] or condition['Reaction Modifier']:
         effectslist.append(Modified_Economy(int(condition['Action Modifier']), int(condition['Bonus Action Modifier']), int(condition['Reaction Modifier'])))
     if condition['Damage Over Time Roll'] or condition['Healing Over Time']:
@@ -107,7 +107,6 @@ def format_action(action, creature):
         for condition in action['Conditions']:
             formatted_condition = format_condition(condition)
             effect = Apply_Condition(formatted_condition, action['Concentration'] == "True")
-            print(f'{action["Name"]}: {action["Concentration"]}')
             is_concentration = action['Concentration'] == "True"
     if action['Action Type'] == 'Attack Roll':
         attempt = Attack_Roll(int(action['Attack Bonus']), effect)
@@ -161,22 +160,36 @@ def format_creature(creature):
     return formatted_creature
 
 #Function to run the simulations
-def run_simulation(team1, team2, iterations):
+def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations):
     open('Battle Log.txt', 'w').close()
+    #logging.disable()
     #Formatting creatures
     start = time.time()
     formatted_team1 = []
     formatted_team2 = []
+    formatted_team3 = []
+    formatted_team4 = []
     namelist = []
     repeated_names = []
-    winrate1 = 0
+    winrate1_2 = 0
+    winrate1_3 = 0
+    winrate1_4 = 0
     winrate2 = 0
+    winrate3 = 0
+    winrate4 = 0
+    battles_12 = 0
+    battles_13 = 0
+    battles_14 = 0
     deaths_total = {}
     uncertainty_total = 0
     duration_total = 0
     permanency_team1 = 0
     permanency_team2 = 0
     biggest_advantages = []
+    hp_percents1_2 = 0
+    hp_percents1_3 = 0
+    hp_percents1_4 = 0
+    hp_percents2 = 0
     
     for creature in team1:
         formatted_team1.append(format_creature(creature))
@@ -198,110 +211,203 @@ def run_simulation(team1, team2, iterations):
             if creature.name == name:
                 creature.name += ' ' + str(i)
                 i += 1
+    for creature in team3:
+        formatted_team3.append(format_creature(creature))
+        if creature['Name'] in namelist: repeated_names.append(creature['Name'])
+        else: namelist.append(creature['Name'])
+    for name in repeated_names:
+        i = 1
+        for creature in formatted_team3:
+            if creature.name == name:
+                creature.name += ' ' + str(i)
+                i += 1
+    for creature in team4:
+        formatted_team4.append(format_creature(creature))
+        if creature['Name'] in namelist: repeated_names.append(creature['Name'])
+        else: namelist.append(creature['Name'])
+    for name in repeated_names:
+        i = 1
+        for creature in formatted_team4:
+            if creature.name == name:
+                creature.name += ' ' + str(i)
+                i += 1
+    
     for i in range(iterations):
         for creature in formatted_team1:
             creature.full_restore()
         for creature in formatted_team2:
             creature.full_restore()
-        response = simulator.start_simulation(formatted_team1.copy(),formatted_team2.copy())
+        for creature in formatted_team3:
+            creature.full_restore()
+        for creature in formatted_team4:
+            creature.full_restore()
         
+        opponents = [formatted_team2]
+        if formatted_team3: opponents.append(formatted_team3)
+        if formatted_team4: opponents.append(formatted_team4)
         
-        #Calculando métricas
-        scores = response['scores']
-        advantage_record = response['advantage_record']
-        advantage_record = [i for i in advantage_record if i != 0]
-        biggest_advantage = response['biggest_advantage']
-        deaths = response['deaths']
-        rounds = response['rounds']
+        for index, opponent in enumerate(opponents):
         
-        for death in deaths:
-            if death in deaths_total:
-                deaths_total[death] += 1
-            else:
-                deaths_total[death] = 1
+            if index==0: battles_12 += 1
+            if index==1: battles_13 += 1
+            if index==2: battles_14 += 1
+        
+            if index == 1 and rest1 == 'No Rest':
+                for creature in formatted_team1:
+                    creature.lose_concentration()
+                    creature.remove_all_conditions()
+            elif index == 1 and rest1 == 'Short Rest':
+                for creature in formatted_team1:
+                    creature.lose_concentration()
+                    creature.short_rest()
+            if index == 2 and rest2 == 'No Rest':
+                for creature in formatted_team1:
+                    creature.lose_concentration()
+                    creature.remove_all_conditions()
+            elif index == 2 and rest2 == 'Short Rest':
+                for creature in formatted_team1:
+                    creature.lose_concentration()
+                    creature.short_rest()
                 
-        logging.info(f'Mortes: {deaths}')
         
-        #Incerteza
-        uncertainty = 0
-        for i in range(1, len(advantage_record)):
-            if advantage_record[i] != advantage_record[i - 1]:
-                uncertainty += 1
-        uncertainty = uncertainty/rounds
-        logging.info(f'Incerteza: {uncertainty}')
-        uncertainty_total += uncertainty
-        
-        #Duração
-        duration_total += rounds
-        logging.info(f'Duração: {rounds} rounds')
-        
-        #Permanencia
-        leader_rounds = 1
-        permanency_amount = 1
-        leader_id = advantage_record[0]
-        permanency_leader = leader_id
-
-        for i in range(1, len(advantage_record)):
-            if advantage_record[i] == advantage_record[i - 1]:
-                leader_rounds += 1
-            else:
-                if leader_rounds > permanency_amount:
-                    permanency_amount = leader_rounds
-                    permanency_leader = leader_id
-
-                leader_rounds = 1
-                leader_id = advantage_record[i]
-
-        # Ultimo líder
-        if leader_rounds > permanency_amount:
-            permanency_amount = leader_rounds
+            response = simulator.start_simulation(formatted_team1.copy(),opponent.copy())
+            
+            
+            #Calculando métricas
+            scores = response['scores']
+            advantage_record = response['advantage_record']
+            advantage_record = [i for i in advantage_record if i != 0]
+            biggest_advantage = response['biggest_advantage']
+            deaths = response['deaths']
+            rounds = response['rounds']
+            hp_percent = response['HP percent']
+            
+            for death in deaths:
+                if death in deaths_total:
+                    deaths_total[death] += 1
+                else:
+                    deaths_total[death] = 1
+                    
+            logging.info(f'Mortes: {deaths}')
+            
+            #Incerteza
+            uncertainty = 0
+            for i in range(1, len(advantage_record)):
+                if advantage_record[i] != advantage_record[i - 1]:
+                    uncertainty += 1
+            uncertainty = uncertainty/rounds
+            logging.info(f'Incerteza: {uncertainty}')
+            uncertainty_total += uncertainty
+            
+            #Duração
+            duration_total += rounds
+            logging.info(f'Duração: {rounds} rounds')
+            
+            #Permanencia
+            leader_rounds = 1
+            permanency_amount = 1
+            leader_id = advantage_record[0]
             permanency_leader = leader_id
+
+            for i in range(1, len(advantage_record)):
+                if advantage_record[i] == advantage_record[i - 1]:
+                    leader_rounds += 1
+                else:
+                    if leader_rounds > permanency_amount:
+                        permanency_amount = leader_rounds
+                        permanency_leader = leader_id
+
+                    leader_rounds = 1
+                    leader_id = advantage_record[i]
+
+            # Ultimo líder
+            if leader_rounds > permanency_amount:
+                permanency_amount = leader_rounds
+                permanency_leader = leader_id
+            
+            if permanency_leader == 1:
+                permanency_team1 += permanency_amount/rounds
+            elif permanency_leader == 2:
+                permanency_team2 += permanency_amount/rounds
+            logging.info(f'A maior permanência foi de {permanency_amount} rounds pelo time {permanency_leader}.\nPermanência de {100*permanency_amount/rounds}%')
+            
+            
+            #Desafio
+            winner = response['winner']
+            if winner == 1:
+                if index == 0: 
+                    winrate1_2 += 1
+                    hp_percents1_2 += hp_percent
+                elif index == 1: 
+                    winrate1_3 += 1
+                    hp_percents1_3 += hp_percent
+                elif index == 2: 
+                    winrate1_4 += 1
+                    hp_percents1_4 += hp_percent
+            elif winner == 2:
+                if index == 0: 
+                    winrate2 += 1
+                    hp_percents2 += hp_percent
+                elif index == 1: winrate3 += 1  
+                elif index == 2: winrate4 += 1   
         
-        if permanency_leader == 1:
-            permanency_team1 += permanency_amount/rounds
-        elif permanency_leader == 2:
-            permanency_team2 += permanency_amount/rounds
-        logging.info(f'A maior permanência foi de {permanency_amount} rounds pelo time {permanency_leader}.\nPermanência de {100*permanency_amount/rounds}%')
-        
-        
-        #Desafio
-        winner = response['winner']
-        if winner == 1:
-            winrate1 += 1
-        elif winner == 2:
-            winrate2 += 1    
+            #Vantagem Decisiva (da iteração)
+            biggest_advantages.append([biggest_advantage,winner])
+            logging.info(f'A maior vantagem foi de {biggest_advantage}\n')
+            logging.info(f'A porcentagem de HP restante do time vencedor foi {round(hp_percent*100,2)}')
+            
+            if winner == 2:
+                break
     
-        #Vantagem Decisiva (da iteração)
-        biggest_advantages.append([biggest_advantage,winner])
-        logging.info(f'A maior vantagem foi de {biggest_advantage}\n')
-        
-    #Vantagem Decisiva (geral)
-    biggest_positive_winner_2 = 0
-    biggest_negative_winner_1 = 0
-    for biggest_advantage, winner in biggest_advantages:
-        if winner == 2 and biggest_advantage > biggest_positive_winner_2:
-            biggest_positive_winner_2 = biggest_advantage
-        elif winner == 1 and biggest_advantage < biggest_negative_winner_1:
-            biggest_negative_winner_1 = biggest_advantage
-    guaranteed_wins_1 = [biggest_advantage for biggest_advantage, winner in biggest_advantages if (biggest_advantage > biggest_positive_winner_2 and winner == 1)]
-    guaranteed_wins_2 = [biggest_advantage for biggest_advantage, winner in biggest_advantages if (biggest_advantage < biggest_negative_winner_1 and winner == 2)]
-    decisive_advantage_1 = 'N/A'
-    decisive_advantage_2 = 'N/A'
-    if guaranteed_wins_1: decisive_advantage_1 = min(guaranteed_wins_1)
-    if guaranteed_wins_2: decisive_advantage_2 = max(guaranteed_wins_2)
-        
+    logging.disable(logging.NOTSET)
     
-    logging.info('Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
-    logging.info(f'Duração média: {duration_total/iterations} rounds')
-    logging.info(f'mortes (totais): {deaths_total}')
-    logging.info(f'Incerteza média: {uncertainty_total/iterations}')
-    logging.info(f'Permanencia média do time 1: {permanency_team1/iterations}')
-    logging.info(f'Permanencia média do time 2: {permanency_team2/iterations}')
-    logging.info(f'Vantagem Decisiva para time 1: {decisive_advantage_1}')
-    logging.info(f'Vantagem Decisiva para time 2: {decisive_advantage_2}')
-    end = time.time()
-    logging.info(f'Tempo de execução: {end-start}')
-    return 'Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
+    if len(opponents) == 1:
+        #Vantagem Decisiva (geral)
+        biggest_positive_winner_2 = 0
+        biggest_negative_winner_1 = 0
+        for biggest_advantage, winner in biggest_advantages:
+            if winner == 2 and biggest_advantage > biggest_positive_winner_2:
+                biggest_positive_winner_2 = biggest_advantage
+            elif winner == 1 and biggest_advantage < biggest_negative_winner_1:
+                biggest_negative_winner_1 = biggest_advantage
+        
+        guaranteed_wins_1 = [biggest_advantage for biggest_advantage, winner in biggest_advantages if (biggest_advantage > biggest_positive_winner_2 and winner == 1)]
+        guaranteed_wins_2 = [biggest_advantage for biggest_advantage, winner in biggest_advantages if (biggest_advantage < biggest_negative_winner_1 and winner == 2)]
+        decisive_advantage_1 = 'N/A'
+        decisive_advantage_2 = 'N/A'
+        if guaranteed_wins_1: decisive_advantage_1 = min(guaranteed_wins_1)
+        if guaranteed_wins_2: decisive_advantage_2 = max(guaranteed_wins_2)
+            
+        
+        logging.info('Team 1 winrate: ' + str(round(winrate1_2*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
+        logging.info(f'Duração média: {duration_total/iterations} rounds')
+        logging.info(f'mortes (totais): {deaths_total}')
+        logging.info(f'Incerteza média: {uncertainty_total/iterations}')
+        logging.info(f'Permanencia média do time 1: {permanency_team1/iterations}')
+        logging.info(f'Permanencia média do time 2: {permanency_team2/iterations}')
+        logging.info(f'Vantagem Decisiva para time 1: {decisive_advantage_1}')
+        logging.info(f'Vantagem Decisiva para time 2: {decisive_advantage_2}')
+        logging.info(f'Porcentagem de HP restante médio para time 1: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
+        logging.info(f'Porcentagem de HP restante médio para time 2: {hp_percents2/winrate2 if winrate2 != 0 else 0}')
+        end = time.time()
+        logging.info(f'Tempo de execução: {end-start}')
+        return 'Team 1 winrate: ' + str(round(winrate1_2*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
+    
+    elif len(opponents) == 2:
+        logging.info(f'Team 1 dungeon clear rate: {round(100*winrate1_3/iterations)}%')
+        logging.info(f'mortes (totais): {deaths_total}')
+        logging.info(f'Porcentagem de HP restante médio após primeiro combate: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
+        logging.info(f'Porcentagem de HP restante médio após segundo combate: {hp_percents1_3/winrate1_3 if winrate1_3 != 0 else 0}')
+        return 'Team 1 clear rate: ' + str(round(winrate1_3*100/iterations,2)) + '%'
+        
+    elif len(opponents) == 3:
+        logging.info(f'Team 1 dungeon clear rate: {round(100*winrate1_4/iterations)}%')
+        logging.info(f'mortes (totais): {deaths_total}')
+        logging.info(f'Porcentagem de HP restante médio após primeiro combate: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
+        logging.info(f'Porcentagem de HP restante médio após segundo combate: {hp_percents1_3/winrate1_3 if winrate1_3 != 0 else 0}')
+        logging.info(f'Porcentagem de HP restante médio após terceiro combate: {hp_percents1_4/winrate1_4 if winrate1_4 != 0 else 0}')
+        return 'Team 1 clear rate: ' + str(round(winrate1_4*100/iterations,2)) + '%'
+        
     
 
 # Function to save to file
@@ -574,9 +680,9 @@ layout_actions = [
 
 
 layout_simulator = [
-    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True)],
-    [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2')],
-    [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2')],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
+    [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
+    [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
     [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
     [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')]
 ]
@@ -590,7 +696,7 @@ layout_main = [
      sg.Column(layout_simulator, key='_SIMULATOR_', visible=False)]
 ]
 
-window = sg.Window('Menu Example', layout_main, ttk_theme=ttk_style, size=(800, 1000))  # Adjusted window size
+window = sg.Window('Menu Example', layout_main, ttk_theme=ttk_style, size=(1200, 1000))  # Adjusted window size
 
 base_creature_data = {
     'Name': 'New Creature',
@@ -874,6 +980,8 @@ def update_action_data(values):
 simulation_data = {
     'Team1': [],
     'Team2': [],
+    'Team3': [],
+    'Team4': [],
     'Repetitions': 1000
 }
 
@@ -1297,6 +1405,8 @@ while True:
         window['_HALFONSAVETEXT_'].update(visible=(values['_ACTIONTYPE_'] == 'Saving Throw' and values['_EFFECT_'] == 'Damage'))
         window['_HALFONSAVE_'].update(visible=(values['_ACTIONTYPE_'] == 'Saving Throw' and values['_EFFECT_'] == 'Damage'))
     elif event == '_EFFECT_':
+        window['_HALFONSAVETEXT_'].update(visible=(values['_ACTIONTYPE_'] == 'Saving Throw' and values['_EFFECT_'] == 'Damage'))
+        window['_HALFONSAVE_'].update(visible=(values['_ACTIONTYPE_'] == 'Saving Throw' and values['_EFFECT_'] == 'Damage'))
         window['_DAMAGEONLY_'].update(visible=values['_EFFECT_'] == 'Damage')
         window['_DAMAGEROLL_'].update(visible=values['_EFFECT_'] == 'Damage')
         window['_DAMAGETYPE_'].update(visible=values['_EFFECT_'] == 'Damage')
@@ -1399,6 +1509,22 @@ while True:
                 creature_data = load(filename)
                 simulation_data['Team2'].append(creature_data)
                 window['_TEAM2_'].update(simulation_data['Team2'])
+    elif event == 'Add Creature 3':
+        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
+        if filenames:
+            filename_list = filenames.split(";")
+            for filename in filename_list:
+                creature_data = load(filename)
+                simulation_data['Team3'].append(creature_data)
+                window['_TEAM3_'].update(simulation_data['Team3'])
+    elif event == 'Add Creature 4':
+        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
+        if filenames:
+            filename_list = filenames.split(";")
+            for filename in filename_list:
+                creature_data = load(filename)
+                simulation_data['Team4'].append(creature_data)
+                window['_TEAM4_'].update(simulation_data['Team4'])
             
     elif event == 'Remove Creature 1' and values['_TEAM1_']:
         selected_creature = values['_TEAM1_'][0]
@@ -1412,10 +1538,24 @@ while True:
         team_data = window['_TEAM2_'].get_list_values()
         team_data.remove(selected_creature)
         window['_TEAM2_'].update(team_data)  
-        simulation_data['Team2'] = window['_TEAM2_'].get_list_values()      
+        simulation_data['Team2'] = window['_TEAM2_'].get_list_values()    
+    
+    elif event == 'Remove Creature 3' and values['_TEAM3_']:
+        selected_creature = values['_TEAM3_'][0]
+        team_data = window['_TEAM3_'].get_list_values()
+        team_data.remove(selected_creature)
+        window['_TEAM3_'].update(team_data)  
+        simulation_data['Team3'] = window['_TEAM3_'].get_list_values()  
+    
+    elif event == 'Remove Creature 4' and values['_TEAM4_']:
+        selected_creature = values['_TEAM4_'][0]
+        team_data = window['_TEAM4_'].get_list_values()
+        team_data.remove(selected_creature)
+        window['_TEAM4_'].update(team_data)  
+        simulation_data['Team4'] = window['_TEAM4_'].get_list_values()    
             
     elif event == 'Simulate':
-        winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Repetitions'])
+        winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], simulation_data['Repetitions'])
         window['_SIMULATIONRESULTS_'].update(winratetext)
     
     #Search Events

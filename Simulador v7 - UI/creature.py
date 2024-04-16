@@ -178,6 +178,8 @@ class Creature:
             self.rest_resources[resource_type] = 'Long Rest'
         elif regain_type.startswith('Recharge'):
             self.recharge_resources[resource_type] = int(regain_type.split()[1])
+        elif regain_type == 'Start of Turn':
+            self.recharge_resources[resource_type] = 1
     
     def remove_all_conditions(self):
         for condition in self.conditions:
@@ -196,6 +198,14 @@ class Creature:
         for resource_type, resource_amount in self.max_resources.items():
             self.current_resources[resource_type] = self.max_resources[resource_type]
         self.remove_all_conditions()
+    
+    def short_rest(self):
+        self.recover_hit_points(self.MHP/2)
+        for resource_type, resource_rest in self.rest_resources.items():
+            if resource_rest == 'Short Rest':
+                self.current_resources[resource_type] = self.max_resources[resource_type]
+        self.remove_all_conditions()
+        
     
     def add_simulator(self, simulator, team):
         self.simulator = simulator
@@ -348,14 +358,17 @@ class Creature:
             condition.notify_SoT(isCaster = True)
         for condition in self.applied_conditions['Non-Concentration']:
             condition.notify_SoT(isCaster = True)
-        self.take_turn()
-    
-    def take_turn(self):
+        
         #Recharge
         for resource_type, recharge in self.recharge_resources.items():
             if recharge <= diceroll(1,6,0):
                 self.current_resources[resource_type] = self.max_resources[resource_type]
                 logging.info(f'{self.name} Recarrega seu {resource_type}')
+        
+        
+        self.take_turn()
+    
+    def take_turn(self):
         
         
         #Filtrar Free actions por recursos

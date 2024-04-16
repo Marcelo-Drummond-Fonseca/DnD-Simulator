@@ -171,9 +171,9 @@ class Modified_Defense(Condition_Effect):
             target.AC_disadvantage += 1
         for i in range(6):
             target.saving_throws[i] += self.save_bonus[i]
-            if target.save_advantage[i] == 1:
+            if self.save_advantage[i] == 1:
                 target.save_advantage[i] += 1
-            elif target.save_advantage[i] == -1:
+            elif self.save_advantage[i] == -1:
                 target.save_disadvantage[i] += 1
         for damage_type, damage_multiplier in self.damage_type_multipliers.items():
             target.add_damage_type_multiplier(damage_type, damage_multiplier)
