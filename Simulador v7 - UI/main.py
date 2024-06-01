@@ -160,9 +160,10 @@ def format_creature(creature):
     return formatted_creature
 
 #Function to run the simulations
-def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations):
+def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations, full_logs):
     open('Battle Log.txt', 'w').close()
-    #logging.disable()
+    if not full_logs: logging.disable()
+    else: logging.disable(logging.NOTSET)
     #Formatting creatures
     start = time.time()
     formatted_team1 = []
@@ -353,8 +354,8 @@ def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations):
         
             #Vantagem Decisiva (da iteração)
             biggest_advantages.append([biggest_advantage,winner])
-            logging.info(f'A maior vantagem foi de {biggest_advantage}\n')
-            logging.info(f'A porcentagem de HP restante do time vencedor foi {round(hp_percent*100,2)}')
+            logging.info(f'A maior vantagem foi de {biggest_advantage}')
+            logging.info(f'A porcentagem de HP restante do time vencedor foi {round(hp_percent*100,2)}%\n')
             
             if winner == 2:
                 break
@@ -391,14 +392,24 @@ def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations):
         logging.info(f'Porcentagem de HP restante médio para time 2: {hp_percents2/winrate2 if winrate2 != 0 else 0}')
         end = time.time()
         logging.info(f'Tempo de execução: {end-start}')
-        return 'Team 1 winrate: ' + str(round(winrate1_2*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
+        return('Team 1 winrate: ' + str(round(winrate1_2*100/iterations,2)) + 
+        '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) +
+        '%\nAverage Duration (in rounds): ' + str(duration_total/iterations) +
+        '\nTotal Deaths: ' + str(deaths_total) +
+        '\nAverage remaining HP for Team 1 on a win: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
+        '\nAverage remaining HP for Team 2 on a win: ' + str(round(hp_percents2/winrate2,2) if winrate2 != 0 else 0))
+        
     
     elif len(opponents) == 2:
         logging.info(f'Team 1 dungeon clear rate: {round(100*winrate1_3/iterations)}%')
         logging.info(f'mortes (totais): {deaths_total}')
         logging.info(f'Porcentagem de HP restante médio após primeiro combate: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
         logging.info(f'Porcentagem de HP restante médio após segundo combate: {hp_percents1_3/winrate1_3 if winrate1_3 != 0 else 0}')
-        return 'Team 1 clear rate: ' + str(round(winrate1_3*100/iterations,2)) + '%'
+        return('Team 1 clear rate: ' + str(round(winrate1_3*100/iterations,2)) + '%' +
+        '\nTotal Deaths: ' + str(deaths_total) +
+        '\nAverage remaining HP for Team 1 after first combat: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
+        '%\nAverage remaining HP for Team 1 after second combat: ' + str(round(hp_percents1_3/winrate1_3,2) if winrate1_3 != 0 else 0) + '%')
+        
         
     elif len(opponents) == 3:
         logging.info(f'Team 1 dungeon clear rate: {round(100*winrate1_4/iterations)}%')
@@ -406,7 +417,11 @@ def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations):
         logging.info(f'Porcentagem de HP restante médio após primeiro combate: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
         logging.info(f'Porcentagem de HP restante médio após segundo combate: {hp_percents1_3/winrate1_3 if winrate1_3 != 0 else 0}')
         logging.info(f'Porcentagem de HP restante médio após terceiro combate: {hp_percents1_4/winrate1_4 if winrate1_4 != 0 else 0}')
-        return 'Team 1 clear rate: ' + str(round(winrate1_4*100/iterations,2)) + '%'
+        return('Team 1 clear rate: ' + str(round(winrate1_4*100/iterations,2)) + '%' +
+        '\nTotal Deaths: ' + str(deaths_total) +
+        '\nAverage remaining HP for Team 1 after first combat: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
+        '%\nAverage remaining HP for Team 1 after second combat: ' + str(round(hp_percents1_3/winrate1_3,2) if winrate1_3 != 0 else 0) +
+        '%\nAverage remaining HP for Team 1 after third combat: ' + str(round(hp_percents1_4/winrate1_4,2) if winrate1_4 != 0 else 0) + '%')
         
     
 
@@ -477,10 +492,10 @@ layout_creature_statistics =[
     [sg.DropDown(values=damage_types, key='_DAMAGETYPERESISTANCE_'), sg.Combo(values=['Resistance','Immunity','Vulnerability'], key='_RESISTANCETYPE_')],
     [sg.Button('Add Resistance/Vulnerability/Immunity', use_ttk_buttons=True), sg.Button('Delete Resistance/Vulnerability/Immunity', use_ttk_buttons=True)],
     [sg.Listbox(values=[], size=(50, 5), key='_ResistanceList_')],
-    [sg.Text("Tags")],
-    [sg.Input(size=(50, 1), key='_CREATURETAG_')],
-    [sg.Button('Add Creature Tag', use_ttk_buttons=True), sg.Button('Delete Creature Tag', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 5), key='_CreatureTagList_')]
+    [sg.Text("Tags", visible=False)],
+    [sg.Input(size=(50, 1), key='_CREATURETAG_', visible=False)],
+    [sg.Button('Add Creature Tag', use_ttk_buttons=True, visible=False), sg.Button('Delete Creature Tag', use_ttk_buttons=True, visible=False)],
+    [sg.Listbox(values=[], size=(50, 5), key='_CreatureTagList_', visible=False)]
 ]
 
 layout_creature_resources = [
@@ -683,6 +698,8 @@ layout_simulator = [
     [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
     [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
     [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
+    [sg.Text('Number of Simulations:'), sg.Input(size=(5,1), key='_ITERATIONS_', enable_events=True)],
+    [sg.Text('Complete Logs?'),sg.DropDown(['True','False'], size=(5,1), key='_FULLLOGS_', visible=True)],
     [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
     [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')]
 ]
@@ -696,7 +713,7 @@ layout_main = [
      sg.Column(layout_simulator, key='_SIMULATOR_', visible=False)]
 ]
 
-window = sg.Window('Menu Example', layout_main, ttk_theme=ttk_style, size=(1200, 1000))  # Adjusted window size
+window = sg.Window('D&D Simulator', layout_main, ttk_theme=ttk_style, size=(1200, 1000))  # Adjusted window size
 
 base_creature_data = {
     'Name': 'New Creature',
@@ -1555,7 +1572,9 @@ while True:
         simulation_data['Team4'] = window['_TEAM4_'].get_list_values()    
             
     elif event == 'Simulate':
-        winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], simulation_data['Repetitions'])
+        iterations = int(values['_ITERATIONS_']) if values['_ITERATIONS_'] else 1
+        full_logs = True if values['_FULLLOGS_'] == 'True' else False
+        winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], iterations, full_logs)
         window['_SIMULATIONRESULTS_'].update(winratetext)
     
     #Search Events

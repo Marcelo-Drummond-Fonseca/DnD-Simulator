@@ -415,7 +415,10 @@ class Creature:
             damage = damage_tuple[0]
             damage_type = damage_tuple[1]
             damage_multiplier = self.get_damage_type_multiplier(damage_type)
-            if damage_multiplier != 1:
+            if damage_multiplier == 0:
+                logging.info(f'{self.name} é imune a dano de {damage_type}')
+                damage = 0
+            elif damage_multiplier != 1:
                 logging.info(f'dano modificado de {damage} para {max(1,floor(damage*damage_multiplier))} devido a resistencias/fraquezas/imunidades')
                 damage = max(1,floor(damage*damage_multiplier))
             self.HP -= damage

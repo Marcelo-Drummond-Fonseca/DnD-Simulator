@@ -45,8 +45,11 @@ class Intelligence:
                                 if advantage == 1: avg_damage = [damage*1.5 for damage in avg_damage]
                                 elif advantage == -1: avg_damage = [damage*0.5 for damage in avg_damage]
                             else:
+                                hit_chance = min(19,max(1,21 - (enemy.AC - action.attempt.attack_bonus)))/20
+                                if advantage == 1: hit_chance = 1 - (1 - hit_chance)**2
+                                elif advantage == -1: hit_chance = hit_chance**2
                                 for i in range(len(avg_damage)):
-                                    avg_damage[i] = avg_damage[i]*((max(1,20 - (enemy.AC - action.attempt.attack_bonus) + 1 + (advantage*4)))/20)
+                                    avg_damage[i] = avg_damage[i]*hit_chance
                                     avg_damage[i] = avg_damage[i]*enemy.get_damage_type_multiplier(action.attempt.effect.damage[i][3])
                         elif isinstance(action.attempt, act.Saving_Throw):
                             avg_half_damage = [floor(damage/2) for damage in avg_damage]
@@ -56,8 +59,10 @@ class Intelligence:
                                 if advantage == 1: avg_damage = [damage*0.75 for damage in avg_damage]
                                 elif advantage == -1: avg_damage = [damage*1.25 for damage in avg_damage]
                             else:
+                                hit_chance = min(20,max(0,action.attempt.save_DC - enemy.saving_throws[save_type] - 1))/20
+                                if advantage == 1: hit_chance = hit_chance**2
+                                elif advantage == -1: hit_chance = 1 - (1 - hit_chance)**2
                                 for i in range(len(avg_damage)):
-                                    hit_chance = (max(0,action.attempt.save_DC - enemy.saving_throws[save_type] - 1 - (advantage*4)))/20
                                     avg_damage[i] = avg_damage[i]*hit_chance + avg_half_damage[i]*(1-hit_chance)
                                     avg_damage[i] = avg_damage[i]*enemy.get_damage_type_multiplier(action.attempt.effect.damage[i][3])
                         total_avg_damage = sum(avg_damage)
@@ -114,6 +119,13 @@ class Intelligence:
                     elif action.target_type == 'Enemy':
                         final_multiplier *= self.modifiers['debuff_favor']
                         for enemy in enemy_team:
+                            hit_chance = 1
+                            if isinstance(action.attempt, act.Saving_Throw):
+                                save_type = action.attempt.save_type
+                                advantage = int(enemy.save_advantage[save_type]) - int(enemy.save_disadvantage[save_type])
+                                hit_chance = min(20,max(0,action.attempt.save_DC - enemy.saving_throws[save_type] - 1))/20
+                                if advantage == 1: hit_chance = hit_chance**2
+                                elif advantage == -1: hit_chance = 1 - (1 - hit_chance)**2
                             target_multiplier = self.target_modifiers[enemy.AI_type]
                             if action.attempt.effect.condition.name in [condition.name for condition in enemy.conditions] and action.attempt.effect.condition.duration>1:
                                 if action.resource_cost:
@@ -121,7 +133,7 @@ class Intelligence:
                                 else:
                                     action_score.append(0)
                             else:
-                                action_score.append(((enemy.HP/2) * final_multiplier * target_multiplier) - concentration_reduction)
+                                action_score.append(((enemy.HP/2) * hit_chance * final_multiplier * target_multiplier) - concentration_reduction)
                 
                 combo_score.append(action_score)
             final_scores.append(combo_score)

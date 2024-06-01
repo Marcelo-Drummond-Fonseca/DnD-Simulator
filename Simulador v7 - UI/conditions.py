@@ -67,7 +67,7 @@ class Condition:
         if self.end_condition == "On Damage Taken":
             self.remove_condition()
         elif self.end_condition == "Repeat Save on Damage Taken":
-            if self.target.make_save(self.saving_throw[0], self.saving_throw[1]): self.remove_condition
+            if self.target.make_save(self.saving_throw[0], self.saving_throw[1]): self.remove_condition()
     
     
     def apply_condition(self):

@@ -27,13 +27,15 @@ class Simulator:
         self.scores = []
         self.advantage_record = []
         self.deaths = []
-        self.team1mhp = sum(creature.HP for creature in self.team1)
-        self.team2mhp = sum(creature.HP for creature in self.team2)
+        self.team1mhp = sum(creature.MHP for creature in self.team1)
+        self.team2mhp = sum(creature.MHP for creature in self.team2)
         self.biggest_advantage = 0
-        for creature in team1:
+        self.team1 = [creature for creature in self.team1 if creature.is_alive()]
+        self.team2 = [creature for creature in self.team2 if creature.is_alive()]
+        for creature in self.team1:
             iniciative.append([creature.roll_iniciative(), creature])
             creature.add_simulator(self, 1)
-        for creature in team2:
+        for creature in self.team2:
             iniciative.append([creature.roll_iniciative(), creature])
             creature.add_simulator(self, 2)
         iniciative.sort(key=lambda x: x[0], reverse=True)
