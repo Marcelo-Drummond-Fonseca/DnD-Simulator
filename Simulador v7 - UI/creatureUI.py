@@ -5,8 +5,6 @@ import copy
 
 #CREATURES
 
-opened_creature_action = None
-
 layout_creature_statistics =[
     [sg.VPush()],
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CREATURENAME_', justification='left', enable_events=True)],
@@ -226,6 +224,7 @@ layout_creature_actions_editor = [
 
 def events(event,values,window):
     global creature_data
+    global opened_creature_action
     if event == '_CREATURES_' and len(values['_CREATURES_']):
         selected_creature = values['_CREATURES_']
         selected_creature_name = selected_creature[0]
@@ -281,7 +280,9 @@ def events(event,values,window):
         
         if filename:
             save(filename, creature_data)
-            sg.popup(f'Creature data saved to {filename}', title='Save Successful')      
+            sg.popup(f'Creature data saved to {filename}', title='Save Successful')
+        window['_ActionList_'].update(creature_data['Actions'])
+        
     
     elif event == '_CREATUREACTIONADDDAMAGE_':
         damage_roll = values['_CREATUREACTIONDAMAGEROLL_']
@@ -361,7 +362,7 @@ def events(event,values,window):
         update_creature(creature_data,window)
     
     elif event == 'Save Creature':# Update creature_data with input values
-        update_creature_data(values)
+        update_creature_data(values,window)
 
         # Show a file save dialog and get the chosen filename
         #filename = sg.popup_get_file('Save Creature Data', save_as=True, default_extension='.json', file_types=(('JSON Files', '*.json'),))

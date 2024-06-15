@@ -1,0 +1,6 @@
+*.exe
+*.zip
+*.spec
+*.txt
+_pycache_/
+build/
