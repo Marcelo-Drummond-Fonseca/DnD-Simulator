@@ -317,7 +317,7 @@ layout_simulator_main = [
 #   [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
 #   [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
 #   [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
-    [sg.Text('Number of Simulations:'), sg.Input(size=(5,1), key='_ITERATIONS_', enable_events=True)],
+    [sg.Text('Number of Simulations:'), sg.Input(size=(5,1), key='_ITERATIONS_', enable_events=True, default_text='1000')],
     [sg.Text('Complete Logs?'),sg.Checkbox('', default=False, key='_FULLLOGS_', visible=True)],
     [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
     [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')],

@@ -236,6 +236,7 @@ def events(event,values,window):
         resistance_data = window['_ResistanceModList_'].get_list_values()
         resistance_data.remove(selected_resistance)
         window['_ResistanceModList_'].update(resistance_data)
+        condition_data['Resistances'] = window['_ResistanceModList_'].get_list_values()
     
     elif event == 'Add Damage Over Time':
         damage_roll = values['_DAMAGEOVERTIMEROLL_']

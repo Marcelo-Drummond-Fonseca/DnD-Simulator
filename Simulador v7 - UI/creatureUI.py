@@ -67,7 +67,7 @@ layout_creature_actions_editor = [
     [sg.pin(sg.Text("Follow-up Action: ", key='_CREATUREACTIONFOLLOWUPTEXT_', visible=True)), sg.pin(sg.Input(size=(15,1), key='_CREATUREACTIONFOLLOWUP_', enable_events=True, visible=True))],
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature Action')],
     [sg.Text("Hint: Editing actions here will affect only the selected creature's version of the action.")],   
-    [sg.Text("Hint: A Follow-up Action named here will attempt to apply if this action is successful.\nUsed for things such as Divine Smite or Stunning Strike.")],   
+    [sg.Text("Hint: A Follow-up Action named here will attempt to apply if this action is successful.\nThe follow-up action must also be included in the creature's actions.\nUsed for things such as Divine Smite or Stunning Strike.")],   
 ]
 
 layout_creature_actions_sidebar = [
@@ -248,6 +248,7 @@ def events(event,values,window):
         resource_data = window['_ResourcesList_'].get_list_values()
         resource_data.remove(selected_resource)
         window['_ResourcesList_'].update(resource_data)
+        creature_data['Resources'] = window['_ResourcesList_'].get_list_values()
     
     elif event == '_ActionList_' and len(values['_ActionList_']):
         selected_action = values['_ActionList_'][0]
@@ -317,6 +318,7 @@ def events(event,values,window):
         action_data = window['_ActionList_'].get_list_values()
         action_data.remove(selected_action)
         window['_ActionList_'].update(action_data)
+        creature_data['Actions'] = window['_ActionList_'].get_list_values()
         
     elif event == '_ADDCREATURECONDITION_' and values['_CREATURECONDITIONSSIDEBAR_']:
         selected_condition = values['_CREATURECONDITIONSSIDEBAR_'][0]
@@ -330,6 +332,7 @@ def events(event,values,window):
         condition_data = window['_CreatureConditionList_'].get_list_values()
         condition_data.remove(selected_condition)
         window['_CreatureConditionList_'].update(condition_data)    
+        creature_data['Conditions'] = window['_CreatureConditionList_'].get_list_values()
     
     elif event == 'Add Combo':
         combo_data = window['_ComboList_'].get_list_values()
@@ -340,6 +343,7 @@ def events(event,values,window):
         combo_data = window['_ComboList_'].get_list_values()
         combo_data.remove(selected_combo)
         window['_ComboList_'].update(combo_data)
+        creature_data['Combos'] = window['_ComboList_'].get_list_values()
     
     elif event == 'Add Resistance/Vulnerability/Immunity':
         resistance_data = window['_ResistanceList_'].get_list_values()
@@ -350,6 +354,7 @@ def events(event,values,window):
         resistance_data = window['_ResistanceList_'].get_list_values()
         resistance_data.remove(selected_resistance)
         window['_ResistanceList_'].update(resistance_data)
+        creature_data['Resistances'] = window['_ResistanceList_'].get_list_values()
     
     elif event == 'Create New Creature':
         creature_data = copy.deepcopy(base_creature_data)

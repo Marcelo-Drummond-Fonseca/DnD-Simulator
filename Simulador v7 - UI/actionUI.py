@@ -245,6 +245,7 @@ def events(event,values,window):
         damage_data = window['_DamageList_'].get_list_values()
         damage_data.remove(selected_action)
         window['_DamageList_'].update(damage_data)
+        action_data['Damage'] = window['_DamageList_'].get_list_values()
     
     elif event == '_ADDCONDITION_' and values['_ACTIONCONDITIONSSIDEBAR_']:
         selected_condition = values['_ACTIONCONDITIONSSIDEBAR_'][0]
@@ -258,6 +259,7 @@ def events(event,values,window):
         condition_data = window['_ConditionList_'].get_list_values()
         condition_data.remove(selected_condition)
         window['_ConditionList_'].update(condition_data)
+        action_data['Conditions'] = window['_ConditionList_'].get_list_values()
         
     elif event == '_ADDFOLLOWUPACTION_':
         filename = sg.popup_get_file('Load Action Data', file_types=(('JSON Files', '*.json'),))
@@ -270,6 +272,7 @@ def events(event,values,window):
         follow_action_data = window['_FollowupActionList_'].get_list_values()
         follow_action_data.remove(selected_action)
         window['_FollowupActionList_'].update(follow_action_data)
+        action_data['Follow Actions'] = window['_FollowupActionList_'].get_list_values()
         
     elif event == 'Add Cost':
         name = values['_ACTIONRESOURCENAME_']
@@ -282,6 +285,7 @@ def events(event,values,window):
         cost_data = window['_ResourceCosts_'].get_list_values()
         cost_data.remove(selected_cost)
         window['_ResourceCosts_'].update(cost_data)
+        action_data['Resource Cost'] = window['_ResourceCosts_'].get_list_values()
     
     elif event == 'Create New Action':
         action_data = copy.deepcopy(base_action_data)
