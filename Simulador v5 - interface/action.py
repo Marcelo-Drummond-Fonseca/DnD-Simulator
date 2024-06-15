@@ -3,14 +3,20 @@ from diceroller import d20roll, diceroll
 from math import floor
 
 class Action:
-    def __init__(self, name, target_number, target_type, attempt, resource_cost = None):
+    def __init__(self, name, target_number, target_type, attempt, resource_cost = None, tags = [], is_concentration = False):
         self.name = name
         self.target_number = target_number
         self.target_type = target_type
         self.attempt = attempt
         self.resource_cost = resource_cost
+        self.tags = tags
+        self.is_concentration = is_concentration
     
     def act(self, targets, creature):
+        if self.is_concentration: creature.lose_concentration()
+        print(f'{creature.name} usa {self.name} contra {[target.name for target in targets]}')
+        if self.resource_cost:
+            creature.current_resources[self.resource_cost[0]] -= self.resource_cost[1]
         self.attempt.act(targets, creature)
     
     def get_targets(self, creature):

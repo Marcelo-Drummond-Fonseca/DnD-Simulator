@@ -1,0 +1,1 @@
+{"Name": "Blessed Healer", "Action Speed": "Follow-Up", "Number of Targets": "1", "Target Type": "Self", "Resource Cost": [], "Action Type": "Auto Apply", "Effect": "Healing", "Attack Bonus": "", "Save DC": "", "Save Type": "", "Half On Save": "True", "Damage": [], "Healing Roll": "3", "Conditions": [], "Concentration": "False", "Follow Actions": [], "Follow Action": ""}

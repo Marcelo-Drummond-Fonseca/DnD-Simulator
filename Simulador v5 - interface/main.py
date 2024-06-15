@@ -76,7 +76,7 @@ def format_creature(creature):
             bonusactionlist.append(formatted_action)
         elif action['Action Speed'] == 'Free Action':
             freeactionlist.append(formatted_action)
-    formatted_creature = Creature(creature['Name'], int(creature['HP']), int(creature['AC']), list(map(int, creature['Saving Throws'])), int(creature['Iniciative']))
+    formatted_creature = Creature(creature['Name'], int(creature['HP']), int(creature['AC']), list(map(int, creature['Saving Throws'])), int(creature['Iniciative']), creature['AI'], creature['Tags'])
     for resource in creature['Resources']:
         formatted_creature.add_resource(resource['Name'], int(resource['Number']), resource['Type'])
     for formatted_action in actionlist:
@@ -103,6 +103,12 @@ def run_simulation(team1, team2, iterations):
     formatted_team2 = []
     winrate1 = 0
     winrate2 = 0
+    deaths_total = {}
+    uncertainty_total = 0
+    duration_total = 0
+    permanency_team1 = 0
+    permanency_team2 = 0
+    
     for creature in team1:
         formatted_team1.append(format_creature(creature))
     for creature in team2:
@@ -112,11 +118,77 @@ def run_simulation(team1, team2, iterations):
             creature.full_restore()
         for creature in formatted_team2:
             creature.full_restore()
-        winner = simulator.start_simulation(formatted_team1.copy(),formatted_team2.copy())
+        response = simulator.start_simulation(formatted_team1.copy(),formatted_team2.copy())
+        
+        
+        #Calculando métricas
+        scores = response['scores']
+        advantage_record = response['advantage_record']
+        deaths = response['deaths']
+        rounds = response['rounds']
+        
+        for death in deaths:
+            if death in deaths_total:
+                deaths_total[death] += 1/iterations
+            else:
+                deaths_total[death] = 1/iterations
+                
+        print(f'deaths: {deaths}')
+        
+        #Incerteza
+        uncertainty = 0
+        for i in range(1, len(advantage_record)):
+            if advantage_record[i] != advantage_record[i - 1]:
+                uncertainty += 1
+        uncertainty = uncertainty/rounds
+        print(f'Incerteza: {uncertainty}')
+        uncertainty_total += uncertainty
+        
+        #Duração
+        duration_total += rounds
+        print(f'Duração: {rounds} rounds')
+        
+        #Permanencia
+        leader_rounds = 1
+        permanency_amount = 1
+        leader_id = lst[0]
+        permanency_leader = leader_id
+
+        for i in range(1, len(lst)):
+            if lst[i] == lst[i - 1]:
+                leader_rounds += 1
+            else:
+                if leader_rounds > permanency_amount:
+                    permanency_amount = leader_rounds
+                    permanency_leader = leader_id
+
+                leader_rounds = 1
+                leader_id = lst[i]
+
+        # Check for the last sequence
+        if leader_rounds > permanency_amount:
+            permanency_amount = leader_rounds
+            permanency_leader = leader_id
+        if permanency_leader == 1:
+            permanency_team1 += permanency_amount
+        elif permanency_leader == 2:
+            permanency_team2 += permanency_amount
+        print(f'A maior permanência foi de {permanency_amount} rounds pelo time {permanency_leader}')
+        
+        
+        #Desafio
+        winner = response['winner']
         if winner == 1:
             winrate1 += 1
         elif winner == 2:
-            winrate2 += 1
+            winrate2 += 1    
+    
+    print('Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
+    print(f'Duração média: {duration_total/iterations}')
+    print(f'mortes (em média): {deaths_total}')
+    print(f'Incerteza média: {uncertainty_total/iterations}')
+    print(f'Permanencia média do time 1: {permanency_team1/iterations}')
+    print(f'Permanencia média do time 2: {permanency_team2/iterations}')
     return 'Team 1 winrate: ' + str(round(winrate1*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%'
     
 
@@ -173,19 +245,24 @@ def get_actions_list():
 layout_creature_statistics =[
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CREATURENAME_', justification='left', enable_events=True)],
     [sg.Text("HP", size=(2, 1)), sg.Input(size=(5, 1), key='_HP_', justification='left', enable_events=True),
-    sg.Text("AC", size=(2, 1)), sg.DropDown(values=[str(i) for i in range(31)], size=(5, 1), key='_AC_'),
-    sg.Text("Iniciative", size=(10, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(5, 1), key='_INICIATIVE_')],
+    sg.Text("AC", size=(2, 1)), sg.DropDown(values=[str(i) for i in range(5,31)], size=(5, 1), key='_AC_'),
+    sg.Text("Iniciative", size=(10, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(5, 1), key='_INICIATIVE_')],
+    [sg.Text("AI", size=(2,1)), sg.DropDown(values=['Melee','Ranged','Support'], size=(7,1), key='_AI_')],
     [sg.Text("Saving Throws")],
-    [sg.Text("STR", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(3, 1), key='_ST1_'),
-    sg.Text("DEX", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(3, 1), key='_ST2_'),
-    sg.Text("CON", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(3, 1), key='_ST3_'),
-    sg.Text("INT", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(3, 1), key='_ST4_'),
-    sg.Text("WIS", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(3, 1), key='_ST5_'),
-    sg.Text("CHA", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(5, 31)], size=(3, 1), key='_ST6_')],
+    [sg.Text("STR", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST1_'),
+    sg.Text("DEX", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST2_'),
+    sg.Text("CON", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST3_'),
+    sg.Text("INT", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST4_'),
+    sg.Text("WIS", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST5_'),
+    sg.Text("CHA", size=(3, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(3, 1), key='_ST6_')],
     [sg.Text("Resistances/Immunities/Vulnerabilities")],
     [sg.DropDown(values=damage_types, key='_DAMAGETYPERESISTANCE_'), sg.Combo(values=['Resistance','Immunity','Vulnerability'], key='_RESISTANCETYPE_')],
     [sg.Button('Add Resistance/Vulnerability/Immunity', use_ttk_buttons=True), sg.Button('Delete Resistance/Vulnerability/Immunity', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 5), key='_ResistanceList_')]
+    [sg.Listbox(values=[], size=(50, 5), key='_ResistanceList_')],
+    [sg.Text("Tags")],
+    [sg.Input(size=(50, 1), key='_CREATURETAG_')],
+    [sg.Button('Add Creature Tag', use_ttk_buttons=True), sg.Button('Delete Creature Tag', use_ttk_buttons=True)],
+    [sg.Listbox(values=[], size=(50, 5), key='_CreatureTagList_')]
 ]
 
 layout_creature_resources = [
@@ -204,7 +281,7 @@ layout_creature_combos = [
     [sg.Listbox(values=[], size=(50, 5), key='_ComboList_')]
 
 ]
-#TODO: Finish this
+
 layout_creature_actions_editor = [
     [sg.Text("Name", size=(8, 1)), sg.Input(size=(50, 1), key='_CREATUREACTIONNAME_', justification='left', enable_events=True)],
     [sg.Text("Attack Bonus", size=(12, 1)), sg.Input(size=(2, 1), key='_CREATUREACTIONATTACKBONUS_', justification='left', enable_events=True, visible=True)],
@@ -382,7 +459,9 @@ base_creature_data = {
     'Resources': [],
     'Actions': [],
     'Combos': [],
-    'Resistances': []
+    'Resistances': [],
+    'AI': 'Melee',
+    'Tags': []
 }
 
 creature_data = {
@@ -394,7 +473,9 @@ creature_data = {
     'Resources': [],
     'Actions': [],
     'Combos': [],
-    'Resistances': []
+    'Resistances': [],
+    'AI': None,
+    'Tags': []
 }
 
 def update_creature(creature_data):
@@ -408,6 +489,8 @@ def update_creature(creature_data):
     window['_ActionList_'].update(creature_data['Actions'])
     window['_ComboList_'].update(creature_data['Combos'])
     window['_ResistanceList_'].update(creature_data['Resistances'])
+    if 'AI' in creature_data: window['_AI_'].update(creature_data['AI'])
+    if 'Tags' in creature_data: window['_CreatureTagList_'].update(creature_data['Tags'])
 
 def update_creature_data(values):
     creature_data['Name'] = values['_CREATURENAME_']
@@ -419,14 +502,15 @@ def update_creature_data(values):
     creature_data['Actions'] = window['_ActionList_'].get_list_values()
     creature_data['Combos'] = window['_ComboList_'].get_list_values()
     creature_data['Resistances'] = window['_ResistanceList_'].get_list_values()
+    creature_data['AI'] = values['_AI_']
+    creature_data['Tags'] = window['_CreatureTagList_'].get_list_values()
     
 def update_creature_action(action):
-    print(action)
     window['_CREATUREACTIONNAME_'].update(action['Name'])
     window['_CREATUREACTIONATTACKBONUS_'].update(action['Attack Bonus'])
     window['_CREATUREACTIONSAVEDC_'].update(action['Save DC'])
     window['_CREATUREACTIONSAVETYPE_'].update(action['Save Type'])
-    window['_CreatureActionDamageList_'].update(action['Damage'])
+    if 'Damage' in action: window['_CreatureActionDamageList_'].update(action['Damage'])
     window['_CREATUREACTIONHEALINGROLL_'].update(action['Healing Roll'])
     
 def update_creature_action_data(values):
@@ -777,6 +861,16 @@ while True:
         damage_data.remove(selected_damage)
         window['_CreatureActionDamageList_'].update(damage_data)
     
+    elif event == 'Add Creature Tag':
+        tag = values['_CREATURETAG_']
+        tag_data = window['_CreatureTagList_'].get_list_values()
+        tag_data.append(tag)
+        window['_CreatureTagList_'].update(tag_data)
+    elif event == 'Delete Creature Tag':
+        selected_tag = values['_CreatureTagList_'][0]
+        tag_data = window['_CreatureTagList_'].get_list_values()
+        tag_data.remove(selected_tag)
+        window['_CreatureTagList_'].update(tag_data)
     elif event == 'Add Action':
         filename = sg.popup_get_file('Load Action Data', file_types=(('JSON Files', '*.json'),))
         if filename:

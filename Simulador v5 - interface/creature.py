@@ -1,10 +1,12 @@
 from random import choice
 from diceroller import d20roll, diceroll
 from math import floor
+from intelligence import Intelligence
+import random
 
 class Creature:
 
-    def __init__(self, name, max_hit_points, armor_class, saving_throws, iniciative):
+    def __init__(self, name, max_hit_points, armor_class, saving_throws, iniciative, AI_type = 'Random', tags = []):
         self.name = name
         self.MHP = max_hit_points
         self.HP = self.MHP
@@ -34,8 +36,11 @@ class Creature:
             "Concentration": [],
             "Non-Concentration": []
         }
-        simulator = None
-        team = 0
+        self.simulator = None
+        self.team = 0
+        self.AI_type = AI_type
+        self.tags = tags
+        self.intelligence = Intelligence(False)
         
     def add_action(self, action):
         self.actions.append(action)
@@ -106,10 +111,18 @@ class Creature:
         self.conditions.remove(condition)
         print(self.name, "perdeu condição:", condition.name)
     
-    def choose_combo(self):
+    def lose_concentration(self):
+        for condition in self.applied_conditions['Concentration']:
+            print(f'{self.name} perde concentration em {condition.name}')
+            condition.remove_condition()
+    
+    def choose_combo(self, options, by_index):
         possible_actions = []
-        for combo in self.combos:
-            actions = [self.actions[i] for i in combo]
+        for combo in options:
+            if by_index:
+                actions = [self.actions[i] for i in combo]
+            else:
+                actions = combo
             possible = True
             necessary_resources = {}
             for action in actions:
@@ -123,14 +136,67 @@ class Creature:
                     possible = False
             if possible:
                 possible_actions.append(actions)
-        actions = choice(possible_actions)
-        for action in actions:
+        if possible_actions:
+            allied_team = self.simulator.get_allied_team(self.team)
+            enemy_team = self.simulator.get_enemy_team(self.team)
+            original_enemy_team = enemy_team.copy()
+            all_scores = self.intelligence.choose_action(possible_actions,allied_team,enemy_team,self)
+            all_scores_best = []
+            for i, combo_scores in enumerate(all_scores):
+                score_sum = 0
+                for j, action_scores in enumerate(combo_scores):
+                    target_number = possible_actions[i][j].target_number
+                    best_score = sum(sorted(action_scores, reverse=True)[:target_number])
+                    score_sum += best_score
+                all_scores_best.append(score_sum)
+            average_score = sum(all_scores_best)/len(all_scores_best)
+            filtered_scores_averages = [value for value in all_scores_best if value >= average_score and value > 0]
+            filtered_scores = [all_scores[i] for i, value in enumerate(all_scores_best) if value >= average_score and value > 0]
+            filtered_combos = [possible_actions[i] for i, value in enumerate(all_scores_best) if value >= average_score and value > 0]
+            if filtered_combos:
+                selected_index = random.choices(range(len(filtered_combos)), weights=filtered_scores_averages, k=1)[0]
+                selected_combo = filtered_combos[selected_index]
+                selected_scores = filtered_scores[i]
+                for i, action in enumerate(selected_combo):
+                    if action.target_type == 'Self':
+                        action.act([self],self)
+                    elif action.target_type == 'Enemy':      
+                        if len(enemy_team) != len(selected_scores[i]):
+                            original_team = set(original_enemy_team)
+                            new_team = set(enemy_team)
+                            missing_members = original_team - new_team
+                            missing_index = [i for i, enemy in enumerate(original_enemy_team) if enemy in missing_members]
+                            considered_scores = [score for i, score in enumerate(selected_scores[i]) if i not in missing_index]
+                            if not considered_scores: break
+                        else: considered_scores = selected_scores[i]
+                        
+                        if action.target_number >= len(enemy_team):
+                            action.act(enemy_team,self)
+                        else:
+                            zipped_enemy_scores = list(zip(enemy_team, considered_scores))
+                            sorted_enemy_scores = sorted(zipped_enemy_scores, key=lambda x: x[1], reverse=True)
+                            targets = [enemy[0] for enemy in sorted_enemy_scores[:action.target_number]]
+                            action.act(targets,self)
+                    elif action.target_type == 'Ally':
+                        if action.target_number >= len(allied_team):
+                            action.act(allied_team,self)
+                        else:
+                            zipped_ally_scores = list(zip(allied_team, selected_scores[i]))
+                            sorted_ally_scores = sorted(zipped_ally_scores, key=lambda x: x[1], reverse=True)
+                            targets = [ally[0] for ally in sorted_ally_scores[:action.target_number]]
+                            action.act(targets,self)
+                    
+                
+            
+        
+        
+        #for action in actions:
             #target = choice(self.simulator.get_enemy_team(self.team))
-            targets = action.get_targets(self)
-            print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
-            if action.resource_cost:
-                self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
-            action.act(targets, self)
+        #    targets = action.get_targets(self)
+        #    print(self.name, 'usa', action.name, 'contra', *(getattr(creature, "name") for creature in targets))
+        #    if action.resource_cost:
+        #        self.current_resources[action.resource_cost[0]] -= action.resource_cost[1]
+        #    action.act(targets, self)
         
     
     def choose_single_action(self, action_type):
@@ -177,13 +243,13 @@ class Creature:
         
         
         #Filtrar Free actions por recursos
-        self.choose_single_action(self.free_actions)
+        self.choose_combo([[free_action] for free_action in self.free_actions], False)
         for i in range(self.bonus_action_number):
             #Filtrar ações bonus por recursos
-            self.choose_single_action(self.bonus_actions)
+            self.choose_combo([[bonus_action] for bonus_action in self.bonus_actions], False)
         for i in range(self.action_number):
             #Filtrar ações por recursos
-            self.choose_combo()
+            self.choose_combo(self.combos, True)
         self.end_of_turn()
     
     def end_of_turn(self):
@@ -213,6 +279,7 @@ class Creature:
 
     
     def take_damage(self, total_damage):
+        total_damage_taken = 0
         for damage_tuple in total_damage:
             damage = damage_tuple[0]
             damage_type = damage_tuple[1]
@@ -220,16 +287,20 @@ class Creature:
                 print('dano modificado de', damage, 'para', floor(damage*self.damage_type_multipliers.get(damage_type)), 'devido a resistencias/fraquezas/imunidades')
                 damage = floor(damage*self.damage_type_multipliers.get(damage_type))
             self.HP -= damage
+            total_damage_taken += damage
             print(self.name, 'toma', damage, 'de dano! HP reduzido para', self.HP)
             if not self.is_alive():
                 print(self.name, 'morreu')
                 self.simulator.notify_death(self,self.team)
+        if total_damage_taken > 0 and self.applied_conditions["Concentration"]:
+            if not self.make_save(max(10,total_damage_taken/2),2):
+                self.lose_concentration()
         
     def recover_hit_points(self,amount):
         self.HP += amount
         #Atualmente removendo o cap de max HP até definir lógica de ações
-        #if self.HP > self.MHP:
-        #    self.HP = self.MHP
+        if self.HP > self.MHP:
+            self.HP = self.MHP
         print(self.name, 'recupera',amount,'de hp. Está agora com',self.HP)
     
     def roll_iniciative(self):

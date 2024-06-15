@@ -12,7 +12,7 @@ import logging
 import time
 
 sg.theme('SystemDefaultForReal')
-ttk_style = 'vista'
+ttk_style = 'xpnative'
 simulator = Simulator()
 
 damage_types = ['Acid', 'Bludgeoning', 'Bludgeoning (Magical)', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic', 'Piercing', 'Piercing (Magical)', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Slashing (Magical)', 'Thunder']
@@ -64,8 +64,17 @@ def format_condition(condition):
         for resistance in condition['Resistances']:
             resistances[resistance[0]] = damage_multiplier[resistance[1]]
         if not 'Evasion' in condition:
-            condition['Evasion'] = ['False','False','False','False','False','False']
-        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), saves_advantage, resistances, auto_crit = condition['Auto Crit'] == 'True', evasion=list(map(lambda x: x == 'True', condition['Evasion']))))
+            condition['Evasion'] = [False,False,False,False,False,False]
+        elif isinstance(condition['Evasion'][0], str):
+            for i in range (6):
+                condition['Evasion'][i] = condition['Evasion'][i] == 'True'
+        guaranteed_crit = False
+        if 'Auto Crit' in condition:
+            if isinstance(condition['Auto Crit'], bool):
+                paired = condition['Auto Crit']
+            else:
+                if condition['Auto Crit'] == 'True': paired = True
+        effectslist.append(Modified_Defense(int(condition['AC Modifier']), advantage, list(map(int, condition['Saves Modifier'])), saves_advantage, resistances, auto_crit = guaranteed_crit, evasion=condition['Evasion']))
     if condition['Action Modifier'] or condition['Bonus Action Modifier'] or condition['Reaction Modifier']:
         effectslist.append(Modified_Economy(int(condition['Action Modifier']), int(condition['Bonus Action Modifier']), int(condition['Reaction Modifier'])))
     if condition['Damage Over Time Roll'] or condition['Healing Over Time']:
@@ -78,7 +87,10 @@ def format_condition(condition):
         effectslist.append(Effect_Over_Time(damage_over_time, healing_over_time))
     paired = False
     if 'Paired Condition' in condition:
-        if condition['Paired Condition'] == 'True': paired = True
+        if isinstance(condition['Paired Condition'], bool):
+            paired = condition['Paired Condition']
+        else:
+            if condition['Paired Condition'] == 'True': paired = True
     if condition['Duration'] == 'Permanent':
         return Condition(condition['Name'], 'Permanent', 9999, effectslist, is_paired = paired)
     return Condition(condition['Name'], condition['End Type'], int(condition['Duration']), effectslist, is_paired = paired)
@@ -106,14 +118,21 @@ def format_action(action, creature):
     elif action['Effect'] == 'Apply Condition':
         for condition in action['Conditions']:
             formatted_condition = format_condition(condition)
+            is_concentration = False
+            if isinstance(action['Concentration'], bool):
+                is_concentration = action['Concentration']
+            else:
+                is_concentration = action['Concentration'] == "True"
             effect = Apply_Condition(formatted_condition, action['Concentration'] == "True")
-            is_concentration = action['Concentration'] == "True"
     if action['Action Type'] == 'Attack Roll':
         attempt = Attack_Roll(int(action['Attack Bonus']), effect)
     elif action['Action Type'] == 'Saving Throw':
         half_on_save = True
         if action['Effect'] == 'Damage':
-            if action['Half On Save'] == 'False': half_on_save = False
+            if isinstance(action['Half On Save'], bool):
+                half_on_save = action['Half On Save']
+            else:
+                half_on_save = action['Half On Save'] == "True"
         attempt = Saving_Throw(int(action['Save DC']), saves_dict[action['Save Type']], half_on_save, effect)
     elif action['Action Type'] == 'Auto Apply':
         attempt = Auto_Apply(effect)
@@ -475,7 +494,10 @@ def get_actions_list():
 
 # Define layouts for different views
 
+#CREATURES
+
 layout_creature_statistics =[
+    [sg.VPush()],
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CREATURENAME_', justification='left', enable_events=True)],
     [sg.Text("HP", size=(2, 1)), sg.Input(size=(5, 1), key='_HP_', justification='left', enable_events=True),
     sg.Text("AC", size=(2, 1)), sg.DropDown(values=[str(i) for i in range(5,31)], size=(5, 1), key='_AC_'),
@@ -495,23 +517,29 @@ layout_creature_statistics =[
     [sg.Text("Tags", visible=False)],
     [sg.Input(size=(50, 1), key='_CREATURETAG_', visible=False)],
     [sg.Button('Add Creature Tag', use_ttk_buttons=True, visible=False), sg.Button('Delete Creature Tag', use_ttk_buttons=True, visible=False)],
-    [sg.Listbox(values=[], size=(50, 5), key='_CreatureTagList_', visible=False)]
+    [sg.Listbox(values=[], size=(50, 5), key='_CreatureTagList_', visible=False)],
+    [sg.VPush()],
 ]
 
 layout_creature_resources = [
+    [sg.VPush()],
     [sg.Text("Resources")],
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(20, 1), key='_ResourceName_'), 
     sg.Text("Number", size=(6, 1)), sg.Input(size=(5, 1), key='_ResourceNumber_'),
     sg.Text("Type", size=(4, 1)), sg.Combo(['Short Rest', 'Long Rest', 'Start of Turn', 'Recharge X'], size=(15, 1), key='_ResourceType_')],
     [sg.Button('Add Resource', use_ttk_buttons=True), sg.Button('Delete Resource', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 5), key='_ResourcesList_')]
+    [sg.Listbox(values=[], size=(50, 5), key='_ResourcesList_')],
+    [sg.VPush()],
 ]
 
 layout_creature_combos = [
+    [sg.VPush()],
     [sg.Text("Combos")],
     [sg.Input(size=(30,1), key='_COMBONAME_', justification='left', enable_events=True)],
     [sg.Button('Add Combo', use_ttk_buttons=True), sg.Button('Delete Combo', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 20), key='_ComboList_')]
+    [sg.Listbox(values=[], size=(50, 20), key='_ComboList_')],
+    [sg.Text("Hint: For creatures that use multiple actions per turn, such as multiattack enemies or extra attack on player characters.\nFormat the combo with the name of each action separated by commas with no spaces. For example, 'Longsword,Longsword'.")], 
+    [sg.VPush()],
 
 ]
 
@@ -526,32 +554,54 @@ layout_creature_actions_editor = [
     [sg.pin(sg.Listbox(values=[], size=(50, 5), key='_CreatureActionDamageList_', visible=False))],
     [sg.pin(sg.Text("Healing (XdY+Z)", size=(13, 1), key='_CREATUREACTIONHEALINGONLY_', visible=False)), sg.pin(sg.Input(size=(10, 1), key='_CREATUREACTIONHEALINGROLL_', justification='left', enable_events=True, visible=False))],
     [sg.pin(sg.Text("Follow-up Action: ", key='_CREATUREACTIONFOLLOWUPTEXT_', visible=True)), sg.pin(sg.Input(size=(15,1), key='_CREATUREACTIONFOLLOWUP_', enable_events=True, visible=True))],
-    [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature Action')]
+    [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature Action')],
+    [sg.Text("Hint: Editing actions here will affect only the selected creature's version of the action.")],   
+    [sg.Text("Hint: A Follow-up Action named here will attempt to apply if this action is successful.\nUsed for things such as Divine Smite or Stunning Strike.")],   
 ]
 
 layout_creature_actions_sidebar = [
     [sg.Listbox(values=[], size=(20, 30), key='_ActionList_', enable_events=True)],
-    [sg.Button('Add Action', use_ttk_buttons=True), sg.Button('Delete Action', use_ttk_buttons=True)]
+    [sg.Button('Remove Selected', use_ttk_buttons=True, key='Delete Action')]
+]
+
+layout_creature_all_actions_sidebar = [
+    [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATUREACTION_', enable_events=True)],
+    [sg.Listbox(values=get_actions_list(), size=(20, 30), key='_CREATUREACTIONSSIDEBAR_', enable_events=True)],
+    [sg.Button('Add Selected', use_ttk_buttons=True, key='Add Action')],
 ]
 
 
 
 layout_creature_actions = [
-    [sg.Column(layout_creature_actions_sidebar, element_justification='c'), sg.VerticalSeparator(), sg.Column(layout_creature_actions_editor)]
+    [sg.VPush()],
+    [sg.Column(layout_creature_actions_sidebar, element_justification='c'), sg.VerticalSeparator(), sg.Column(layout_creature_actions_editor), sg.VerticalSeparator(), sg.Column(layout_creature_all_actions_sidebar)],
+    [sg.VPush()],
 ]
 
-layout_creature_conditions = [
+layout_creature_conditions_sidebar = [
+    [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURECONDITION_', enable_events=True)],
+    [sg.Listbox(values=get_conditions_list(), size=(20, 30), key='_CREATURECONDITIONSSIDEBAR_', enable_events=True)],
+    [sg.Button('Add Selected', use_ttk_buttons=True, key='_ADDCREATURECONDITION_')],
+]
+
+layout_creature_conditions_main = [
     [sg.Text("Conditions")],
-    [sg.Button('Add Condition', use_ttk_buttons=True, key='_ADDCREATURECONDITION_'), sg.Button('Delete Condition', use_ttk_buttons=True, key='_DELETECREATURECONDITION_')],
+    [sg.Button('Remove Selected', use_ttk_buttons=True, key='_DELETECREATURECONDITION_')],
     [sg.Listbox(values=[], size=(50, 5), key='_CreatureConditionList_')]
 ]
 
+layout_creature_conditions = [
+    [sg.VPush()],
+    [sg.Column(layout_creature_conditions_main),sg.VerticalSeparator(),sg.Column(layout_creature_conditions_sidebar)],
+    [sg.VPush()],
+]
+
 layout_creature_stats = [
-    [sg.Column(layout_creature_statistics, key='_CREATURESTATS_', visible=True),
-    sg.Column(layout_creature_actions, key='_CREATUREACTIONS_', visible=False),
-    sg.Column(layout_creature_combos, key='_CREATURECOMBOS_', visible=False),
-    sg.Column(layout_creature_resources, key='_CREATURERESOURCES_', visible=False),
-    sg.Column(layout_creature_conditions, key='_CREATURECONDITIONS_', visible=False)],
+    [sg.TabGroup([[sg.Tab('Basics',layout_creature_statistics),
+    sg.Tab('Actions',layout_creature_actions),
+    sg.Tab('Combos',layout_creature_combos),
+    sg.Tab('Resources',layout_creature_resources),
+    sg.Tab('Conditions',layout_creature_conditions)]])],
     
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Creature')]
@@ -567,59 +617,73 @@ layout_creatures = [
     [sg.Column(layout_creatures_sidebar, element_justification='c'), sg.VerticalSeparator(), sg.Column(layout_creature_stats)]
 ]
 
+
+#CONDITIONS
+
+
 layout_condition_statistics = [
+    [sg.VPush()],
     [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CONDITIONNAME_', justification='left', enable_events=True)],
     [sg.Text("Duration", size=(8,1)), sg.DropDown([1,2,10,100,'Permanent'], size=(5,1), key='_DURATION_'), 
     sg.Text('Turns, ends on', size=(14,1)), sg.DropDown(values=condition_end_possibilities, key='_ENDTYPE_')],
-    [sg.Text("Paired Condition?"), sg.DropDown(values=['True','False'], size=(5,1), key='_PAIREDCONDITION_')],
+    [sg.Text("Paired Condition?"), sg.Checkbox('',default=False, key='_PAIREDCONDITION_')],
+    [sg.Text("Hint: A Paired Condition has its effects applied on the caster.\nThese condition's effects apply only when considering interactions between caster and target.\nUsed for things like hiding, hunter's mark, etc.")],
+    [sg.VPush()],
 ]
 
 layout_condition_offenses = [
+    [sg.VPush()],
     [sg.Text("Attack modifier", size=(15,1)), sg.Input(size=(3,1), key='_ATTACKMOD_'), 
     sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ATTACKADVANTAGE_'),
     sg.Text("Damage modifier", size=(15,1)), sg.Input(size=(3,1), key='_DAMAGEMOD_'),
     sg.Text("Crits on:", size=(8,1)), sg.Input(size=(3,1), key='_CRITSON_')],
     [sg.Text("Extra Damage")],
     [sg.Text("Damage (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_EXTRADAMAGEROLL_'), sg.DropDown(values=damage_types, key='_EXTRADAMAGETYPE_')],
-    
+    [sg.VPush()],
 ]
 
 layout_condition_defenses = [
+    [sg.VPush()],
     [sg.Text("AC modifier", size=(11,1)), sg.Input(size=(3,1), key='_ACMOD_'),
     sg.Text("Attacks against made at", size=(23,1)), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_DEFENSEADVANTAGE_')],
-    [sg.Text("Auto crit?", size=(10,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_AUTOCRIT_')],
+    [sg.Text("Auto crit?", size=(10,1)), sg.Checkbox('', key='_AUTOCRIT_', default=False)],
     [sg.Text("Saving Throw Modifiers", size=(21,1))],
-    [sg.Text("STR", size=(3,1)), sg.Input(size=(3,1), key='_ST1MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST1ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST1EVASION_')],
-    [sg.Text("DEX", size=(3,1)), sg.Input(size=(3,1), key='_ST2MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST2ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST2EVASION_')],
-    [sg.Text("CON", size=(3,1)), sg.Input(size=(3,1), key='_ST3MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST3ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST3EVASION_')],
-    [sg.Text("INT", size=(3,1)), sg.Input(size=(3,1), key='_ST4MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST4ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST4EVASION_')],
-    [sg.Text("WIS", size=(3,1)), sg.Input(size=(3,1), key='_ST5MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST5ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST5EVASION_')],
-    [sg.Text("CHA", size=(3,1)), sg.Input(size=(3,1), key='_ST6MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST6ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.DropDown(values=['True','False'], size=(5,1), key='_ST6EVASION_')],
+    [sg.Text("STR", size=(3,1)), sg.Input(size=(3,1), key='_ST1MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST1ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.Checkbox('', key='_ST1EVASION_', default=False)],
+    [sg.Text("DEX", size=(3,1)), sg.Input(size=(3,1), key='_ST2MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST2ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.Checkbox('', key='_ST2EVASION_', default=False)],
+    [sg.Text("CON", size=(3,1)), sg.Input(size=(3,1), key='_ST3MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST3ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.Checkbox('', key='_ST3EVASION_', default=False)],
+    [sg.Text("INT", size=(3,1)), sg.Input(size=(3,1), key='_ST4MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST4ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.Checkbox('', key='_ST4EVASION_', default=False)],
+    [sg.Text("WIS", size=(3,1)), sg.Input(size=(3,1), key='_ST5MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST5ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.Checkbox('', key='_ST5EVASION_', default=False)],
+    [sg.Text("CHA", size=(3,1)), sg.Input(size=(3,1), key='_ST6MOD_'), sg.DropDown(values=['','Advantage','Disadvantage'], size=(12,1), key='_ST6ADVANTAGE_'), sg.Text("Evasion?", size=(8,1)), sg.Checkbox('', key='_ST6EVASION_', default=False)],
     [sg.Text("Resistances/Immunities/Vulnerabilities")],
     [sg.DropDown(values=damage_types, key='_DAMAGETYPERESISTANCEMOD_'), sg.Combo(values=['Resistance','Immunity','Vulnerability'], key='_RESISTANCETYPEMOD_')],
     [sg.Button('Add Resistance/Vulnerability/Immunity Modifier', use_ttk_buttons=True), sg.Button('Delete Resistance/Vulnerability/Immunity Modifier', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 5), key='_ResistanceModList_')]
+    [sg.Listbox(values=[], size=(50, 5), key='_ResistanceModList_')],
+    [sg.VPush()],
 ]
 
 layout_condition_economy = [
+    [sg.VPush()],
     [sg.Text("Amount modifiers",size=(16,1))],
     [sg.Text("Actions",size=(7,1)), sg.Input(size=(3,1), key='_ACTIONMOD_'),
     sg.Text("Bonus actions",size=(13,1)), sg.Input(size=(3,1), key='_BONUSACTIONMOD_'),
-    sg.Text("Reactions",size=(9,1)), sg.Input(size=(3,1), key='_REACTIONMOD_')]
+    sg.Text("Reactions",size=(9,1)), sg.Input(size=(3,1), key='_REACTIONMOD_')],
+    [sg.VPush()],
 ]
 
 layout_condition_over_time = [
+    [sg.VPush()],
     [sg.Text("Damage over time")],
     [sg.Text("Damage (XdY+Z)", size=(13, 1)), sg.Input(size=(10, 1), key='_DAMAGEOVERTIMEROLL_'), sg.DropDown(values=damage_types, key='_DAMAGEOVERTIMETYPE_')],
     [sg.Text("Healing over time (XdY+Z)"), sg.Input(size=(10, 1), key='_HEALINGOVERTIMEROLL_')],
+    [sg.VPush()],
 ]
 
 layout_conditions_stats = [
-    [sg.Column(layout_condition_statistics, key='_CONDITIONSTATS_', visible=True),
-    sg.Column(layout_condition_offenses, key='_CONDITIONOFFENSE_', visible=False),
-    sg.Column(layout_condition_defenses, key='_CONDITIONDEFENSE_', visible=False),
-    sg.Column(layout_condition_economy, key='_CONDITIONECONOMY_', visible=False),
-    sg.Column(layout_condition_over_time, key='_CONDITIONOVERTIME_', visible=False)],
+    [sg.TabGroup([[sg.Tab('Basics',layout_condition_statistics),
+    sg.Tab('Offenses',layout_condition_offenses),
+    sg.Tab('Defenses',layout_condition_defenses),
+    sg.Tab('Action Economy',layout_condition_economy),
+    sg.Tab('Over Time Effects',layout_condition_over_time)]])],
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Condition'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Condition')]
 ]
@@ -634,37 +698,56 @@ layout_conditions = [
     [sg.Column(layout_conditions_sidebar, element_justification='c'), sg.VerticalSeparator(), sg.Column(layout_conditions_stats)]
 ]
     
-    
+#ACTIONS
     
 layout_action_statistics = [
+    [sg.VPush()],
     [sg.Text("Name", size=(8, 1)), sg.Input(size=(50, 1), key='_ACTIONNAME_', justification='left', enable_events=True)],
     [sg.Text("Action Speed", size=(12,1)), sg.Combo(['Action', 'Bonus Action', 'Free Action', 'Follow-Up'], size=(12, 1), key='_ACTIONSPEED_')],
     [sg.Text("Number of Targets", size=(16, 1)), sg.Input(size=(2, 1), key='_NUMTARGETS_', justification='left', enable_events=True),
-    sg.Text("Target Type", size=(11, 1)), sg.Combo(['Self', 'Enemy', 'Ally'], size=(6, 1), key='_TARGETTYPE_')]
+    sg.Text("Target Type", size=(11, 1)), sg.Combo(['Self', 'Enemy', 'Ally'], size=(6, 1), key='_TARGETTYPE_')],
+    [sg.Text("Hint: A Follow-Up action won't be used normally. It will only be used when defined as a follow-up on a creature's action editor.")],  
+    [sg.VPush()],
 ]
 
 layout_action_costs = [
+    [sg.VPush()],
     [sg.Text("Resource Name", size=(16, 1)), sg.Input(size=(20, 1), key='_ACTIONRESOURCENAME_', justification='left', enable_events=True),
     sg.Text("Resource Cost", size=(16, 1)), sg.Input(size=(5, 1), key='_ACTIONRESOURCECOST_', justification='left', enable_events=True)],
     [sg.Button('Add Cost', use_ttk_buttons=True),sg.Button('Delete Cost', use_ttk_buttons=True)],
-    [sg.Listbox(values=[], size=(50, 5), key='_ResourceCosts_')]
+    [sg.Listbox(values=[], size=(50, 5), key='_ResourceCosts_')],
+    [sg.VPush()],
 ]
 
-layout_action_effects = [
+layout_action_conditions_sidebar = [
+    [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTACTIONCONDITION_', enable_events=True)],
+    [sg.Listbox(values=get_conditions_list(), size=(20, 30), key='_ACTIONCONDITIONSSIDEBAR_', enable_events=True)],
+]
+
+layout_action_effects_sidebar = [
+    [sg.VerticalSeparator(), sg.Column(layout_action_conditions_sidebar)],
+    [sg.Button('Add Selected', use_ttk_buttons=True, visible=False, key='_ADDCONDITION_')],
+]
+
+layout_action_effects_main = [
     [sg.Text("Action Type", size=(8, 1)), sg.Combo(['Attack Roll', 'Saving Throw', 'Auto Apply'], size=(12, 1), key='_ACTIONTYPE_', enable_events=True)],
     [sg.pin(sg.Text("Attack Bonus", size=(12, 1), key='_ATTACKONLY_', visible=False)), sg.pin(sg.Input(size=(2, 1), key='_ATTACKBONUS_', justification='left', enable_events=True, visible=False))],
     [sg.pin(sg.Text("Save DC", size=(8, 1), key='_SAVEONLYDC_', visible=False)), sg.pin(sg.Input(size=(2, 1), key='_SAVEDC_', justification='left', enable_events=True, visible=False))],
     [sg.pin(sg.Text("Save Type", size=(8, 1), key='_SAVEONLYTYPE_', visible=False)), sg.pin(sg.Combo(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'], size=(5, 1), key='_SAVETYPE_', visible=False))],
     [sg.Text("Effect", size=(8, 1)), sg.Combo(['Damage', 'Healing', 'Apply Condition'], size=(12, 1), key='_EFFECT_', enable_events=True)],
-    [sg.pin(sg.Text("Half on Save?", key='_HALFONSAVETEXT_', visible=False)), sg.pin(sg.DropDown(['True','False'], size=(5,1), key='_HALFONSAVE_', visible=False))],
+    [sg.pin(sg.Text("Half on Save?", key='_HALFONSAVETEXT_', visible=False)), sg.pin(sg.Checkbox('', default=False, key='_HALFONSAVE_', visible=False))],
     [sg.pin(sg.Text("Damage (XdY+Z)", size=(13, 1), key='_DAMAGEONLY_', visible=False)), sg.pin(sg.Input(size=(10, 1), key='_DAMAGEROLL_', justification='left', enable_events=True, visible=False))],
     [sg.pin(sg.Text("Damage Type", size=(11, 1), key='_DAMAGEONLY_', visible=False)), sg.pin(sg.Combo(values=damage_types, key='_DAMAGETYPE_', enable_events=True, visible=False))],
     [sg.pin(sg.Button('Add Damage', use_ttk_buttons=True, visible=False, key='_ADDDAMAGE_')), sg.pin(sg.Button('Delete Damage', use_ttk_buttons=True, visible=False, key='_DELETEDAMAGE_'))],
     [sg.pin(sg.Listbox(values=[], size=(50, 5), key='_DamageList_', visible=False))],
     [sg.pin(sg.Text("Healing (XdY+Z)", size=(13, 1), key='_HEALINGONLY_', visible=False)), sg.pin(sg.Input(size=(10, 1), key='_HEALINGROLL_', justification='left', enable_events=True, visible=False))],
-    [sg.pin(sg.Button('Add Condition', use_ttk_buttons=True, visible=False, key='_ADDCONDITION_')), sg.pin(sg.Button('Delete Condition', use_ttk_buttons=True, visible=False, key='_DELETECONDITION_'))],
+    [sg.pin(sg.Button('Remove Selected', use_ttk_buttons=True, visible=False, key='_DELETECONDITION_'))],
     [sg.pin(sg.Listbox(values=[], size=(50, 5), key='_ConditionList_', visible=False))],
-    [sg.pin(sg.Text("Concentration", key='_CONDITIONONLY_', visible=False)), sg.pin(sg.DropDown(['True','False'], size=(5,1), key='_CONCENTRATION_', visible=False))]
+    [sg.pin(sg.Text("Concentration", key='_CONDITIONONLY_', visible=False)), sg.pin(sg.Checkbox('', default=False, key='_CONCENTRATION_', visible=False))]
+]
+
+layout_action_effects = [
+    [sg.Column(layout_action_effects_main),sg.Column(layout_action_effects_sidebar, key='_EFFECTSSIDEBAR_', visible=False)]
 ]
 
 layout_action_followups = [
@@ -674,10 +757,10 @@ layout_action_followups = [
 ]
     
 layout_action_stats = [
-    [sg.Column(layout_action_statistics, key='_ACTIONSTATS_', visible=True),
-    sg.Column(layout_action_costs, key='_ACTIONCOSTS_', visible=False),
-    sg.Column(layout_action_effects, key='_ACTIONEFFECTS_', visible=False),
-    sg.Column(layout_action_followups, key='_ACTIONFOLLOWUPS_', visible = False)],
+    [sg.TabGroup([[sg.Tab('Basics',layout_action_statistics),
+    sg.Tab('Costs',layout_action_costs),
+    sg.Tab('Effects',layout_action_effects),
+    sg.Tab('Followups',layout_action_followups,visible=False)]])],
     
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Action'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Action')]
@@ -693,27 +776,73 @@ layout_actions = [
     [sg.Column(layout_actions_sidebar, element_justification='c'), sg.VerticalSeparator(), sg.Column(layout_action_stats)]
 ]
 
+#SIMULATOR
+
+layout_creatures_simulator_sidebar = [
+    [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURESIMULATOR_', enable_events=True)],
+    [sg.Listbox(values=get_creatures_list(), size=(20, 30), key='_CREATURESSIMULATOR_', enable_events=True)],
+    [sg.Button('Add Selected to Team 1', use_ttk_buttons=True, key='Add Creature 1')],
+    [sg.Button('Add Selected to Team 2', use_ttk_buttons=True, key='Add Creature 2')],
+    [sg.Button('Add Selected to Team 3', use_ttk_buttons=True, key='Add Creature 3')],
+    [sg.Button('Add Selected to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
+]
+
+layout_simulator_team1 = [
+    [sg.Text("Team 1")],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True)],
+    [sg.Button('Remove Selected from Team 1', use_ttk_buttons=True, key='Remove Creature 1')],
+]
+
+layout_simulator_team2 = [
+    [sg.Text("Team 2")],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True)],
+    [sg.Button('Remove Selected from Team 2', use_ttk_buttons=True, key='Remove Creature 2')],
+]
+
+layout_simulator_team3 = [
+    [sg.Text("Team 3")],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True)],
+    [sg.Button('Remove Selected from Team 3', use_ttk_buttons=True, key='Remove Creature 3')],
+    [sg.Text('Time Between Fights?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST1_')],
+]
+
+layout_simulator_team4 = [
+    [sg.Text("Team 4")],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
+    [sg.Button('Remove Selected from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
+    [sg.Text('Time Between Fights?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST2_')],
+]
+
+layout_simulator_main = [
+    sg.vtop([sg.Column(layout_simulator_team1, element_justification='c'), sg.Column(layout_simulator_team2, element_justification='c'), sg.Column(layout_simulator_team3, element_justification='c'), sg.Column(layout_simulator_team4, element_justification='c')]),
+#   [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
+#   [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
+#   [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
+    [sg.Text('Number of Simulations:'), sg.Input(size=(5,1), key='_ITERATIONS_', enable_events=True)],
+    [sg.Text('Complete Logs?'),sg.Checkbox('', default=False, key='_FULLLOGS_', visible=True)],
+    [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
+    [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')],
+    [sg.Button('Open Complete Logs', use_ttk_buttons=True, key='Logs_Button', visible=False)],
+]
 
 layout_simulator = [
-    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
-    [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
-    [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
-    [sg.Text('Number of Simulations:'), sg.Input(size=(5,1), key='_ITERATIONS_', enable_events=True)],
-    [sg.Text('Complete Logs?'),sg.DropDown(['True','False'], size=(5,1), key='_FULLLOGS_', visible=True)],
-    [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
-    [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')]
+    sg.vtop([sg.Column(layout_simulator_main), sg.VerticalSeparator(), sg.Column(layout_creatures_simulator_sidebar)])
 ]
 
 # Create the main window layout with the menu
+#layout_main = [
+#    [sg.Menu([['Simulator',['Simulator']],['Creature', ['Creature Stats','Actions', 'Conditions', 'Resources', 'Combos']], ['Action',['Action Stats', 'Costs', 'Effects']], ['Condition',['Condition Stats', 'Offense Modifiers','Defense Modifiers', 'Economy Modifiers', 'Over Time']]])],
+#    [sg.Column(layout_creatures, key='_CREATURE_', visible=False),
+#     sg.Column(layout_actions, key='_ACTION_', visible=False),
+#     sg.Column(layout_conditions, key='_CONDITION_', visible=False),
+#     sg.Column(layout_simulator, key='_SIMULATOR_', visible=True)]
+#]
+
 layout_main = [
-    [sg.Menu([['Creature', ['Creature Stats','Actions', 'Conditions', 'Resources', 'Combos']], ['Action',['Action Stats', 'Costs', 'Effects']], ['Condition',['Condition Stats', 'Offense Modifiers','Defense Modifiers', 'Economy Modifiers', 'Over Time']], ['Simulator',['Simulator']]])],
-    [sg.Column(layout_creatures, key='_CREATURE_', visible=True),
-     sg.Column(layout_actions, key='_ACTION_', visible=False),
-     sg.Column(layout_conditions, key='_CONDITION_', visible=False),
-     sg.Column(layout_simulator, key='_SIMULATOR_', visible=False)]
+    [[sg.TabGroup([[sg.Tab('Simulator',layout_simulator), sg.Tab('Creatures',layout_creatures), sg.Tab('Actions',layout_actions), sg.Tab('Conditions',layout_conditions)]])]]
 ]
 
-window = sg.Window('D&D Simulator', layout_main, ttk_theme=ttk_style, size=(1200, 1000))  # Adjusted window size
+window = sg.Window('D&D Simulator', layout_main, ttk_theme=ttk_style, size=(1200, 800))  # Adjusted window size
 
 base_creature_data = {
     'Name': 'New Creature',
@@ -822,7 +951,7 @@ base_condition_data = {
     'Extra Damage Type': '',
     'AC Modifier': '0',
     'Defense Advantage': '',
-    'Auto Crit': 'False',
+    'Auto Crit': False,
     'Saves Modifier': ['0','0','0','0','0','0'],
     'Saves Advantage': ['','','','','',''],
     'Resistances': [],
@@ -833,7 +962,7 @@ base_condition_data = {
     'Damage Over Time Type': '',
     'Healing Over Time': '',
     'Paired Condition': 'False',
-    'Evasion': ['False','False','False','False','False','False']
+    'Evasion': [False,False,False,False,False,False]
 }    
 
 condition_data = {
@@ -875,11 +1004,22 @@ def update_condition(condition_data):
     window['_ACMOD_'].update(condition_data['AC Modifier'])
     window['_DEFENSEADVANTAGE_'].update(condition_data['Defense Advantage'])
     window['_AUTOCRIT_'].update(condition_data['Auto Crit'])
+    if 'Auto Crit' in condition_data: 
+        if condition_data['Auto Crit'] == 'True':
+            window['_AUTOCRIT_'].update(True)
+        elif condition_data['Auto Crit'] == 'False':
+            window['_AUTOCRIT_'].update(False)
+        else: window['_AUTOCRIT_'].update(condition_data['Auto Crit'])
     for i in range(1, 7):
         window[f'_ST{i}MOD_'].update(condition_data['Saves Modifier'][i-1])
         window[f'_ST{i}ADVANTAGE_'].update(condition_data['Saves Advantage'][i-1])
-        if 'Evasion' in condition_data: window[f'_ST{i}EVASION_'].update(condition_data['Evasion'][i-1])
-        else: window[f'_ST{i}EVASION_'].update('False')
+        if 'Evasion' in condition_data: 
+            if condition_data['Evasion'][i-1] == 'True':
+                window[f'_ST{i}EVASION_'].update(True)
+            elif condition_data['Evasion'][i-1] == 'False':
+                window[f'_ST{i}EVASION_'].update(False)
+            else: window[f'_ST{i}EVASION_'].update(condition_data['Evasion'][i-1])
+        else: window[f'_ST{i}EVASION_'].update(False)
     window['_ResistanceModList_'].update(condition_data['Resistances'])
     window['_ACTIONMOD_'].update(condition_data['Action Modifier'])
     window['_BONUSACTIONMOD_'].update(condition_data['Bonus Action Modifier'])
@@ -887,8 +1027,13 @@ def update_condition(condition_data):
     window['_DAMAGEOVERTIMEROLL_'].update(condition_data['Damage Over Time Roll'])
     window['_DAMAGEOVERTIMETYPE_'].update(condition_data['Damage Over Time Type'])
     window['_HEALINGOVERTIMEROLL_'].update(condition_data['Healing Over Time'])
-    if 'Paired Condition' in condition_data: window['_PAIREDCONDITION_'].update(condition_data['Paired Condition'])
-    else: window['_PAIREDCONDITION_'].update('False')
+    if 'Paired Condition' in condition_data: 
+        if condition_data['Paired Condition'] == 'True':
+            window['_PAIREDCONDITION_'].update(True)
+        elif condition_data['Paired Condition'] == 'False':
+            window['_PAIREDCONDITION_'].update(False)
+        else: window['_PAIREDCONDITION_'].update(condition_data['Paired Condition'])
+    else: window['_PAIREDCONDITION_'].update(False)
 
 def update_condition_data(values):
     condition_data['Name'] = values['_CONDITIONNAME_']
@@ -917,8 +1062,8 @@ def update_condition_data(values):
 
 base_action_data = {
     'Name': 'New Action',
-    'Action Speed': '',
-    'Number of Targets': '',
+    'Action Speed': 'Action',
+    'Number of Targets': '1',
     'Target Type': 'Self',
     'Resource Cost': [],
     'Action Type': '',
@@ -926,11 +1071,11 @@ base_action_data = {
     'Attack Bonus': '',
     'Save DC': '',
     'Save Type': '',
-    'Half On Save': 'True',
+    'Half On Save': True,
     'Damage': [],
     'Healing Roll': '',
     'Conditions': [],
-    'Concentration': 'False',
+    'Concentration': False,
     'Follow Actions': [],
     'Follow Action': ''
 }
@@ -966,14 +1111,24 @@ def update_action(action_data):
     window['_ATTACKBONUS_'].update(action_data['Attack Bonus'])
     window['_SAVEDC_'].update(action_data['Save DC'])
     window['_SAVETYPE_'].update(action_data['Save Type'])
-    if 'Half On Save' in action_data: window['_HALFONSAVE_'].update(action_data['Half On Save'])
+    if 'Half On Save' in action_data: 
+        if action_data['Half On Save'] == 'True':
+            window['_HALFONSAVE_'].update(True)
+        elif action_data['Half On Save'] == 'False':
+            window['_HALFONSAVE_'].update(False)
+        else: window['_HALFONSAVE_'].update(action_data['Half On Save'])
     if 'Damage' in action_data:
         window['_DamageList_'].update(action_data['Damage'])
     else:
         window['_DamageList_'].update([])
     window['_HEALINGROLL_'].update(action_data['Healing Roll'])
     window['_ConditionList_'].update(action_data['Conditions'])
-    if 'Concentration' in action_data: window['_CONCENTRATION_'].update(action_data['Concentration'])
+    if 'Concentration' in action_data: 
+        if action_data['Concentration'] == 'True':
+            window['_CONCENTRATION_'].update(True)
+        elif action_data['Concentration'] == 'False':
+            window['_CONCENTRATION_'].update(False)
+        else: window['_CONCENTRATION_'].update(action_data['Concentration'])
     window['_FollowupActionList_'].update(action_data['Follow Actions'])
 
 def update_action_data(values):
@@ -1249,8 +1404,9 @@ while True:
         tag_data.remove(selected_tag)
         window['_CreatureTagList_'].update(tag_data)
     
-    elif event == 'Add Action':
-        filename = sg.popup_get_file('Load Action Data', file_types=(('JSON Files', '*.json'),))
+    elif event == 'Add Action' and values ['_CREATUREACTIONSSIDEBAR_']:
+        selected_action = values['_CREATUREACTIONSSIDEBAR_'][0]
+        filename = os.path.join(os.getcwd(), 'Actions', selected_action + '.json')
         if filename:
             action_data = load(filename)
             creature_data['Actions'].append(action_data)
@@ -1261,8 +1417,9 @@ while True:
         action_data.remove(selected_action)
         window['_ActionList_'].update(action_data)
         
-    elif event == '_ADDCREATURECONDITION_':
-        filename = sg.popup_get_file('Load Condition Data', file_types=(('JSON Files', '*.json'),))
+    elif event == '_ADDCREATURECONDITION_' and values['_CREATURECONDITIONSSIDEBAR_']:
+        selected_condition = values['_CREATURECONDITIONSSIDEBAR_'][0]
+        filename = os.path.join(os.getcwd(), 'Conditions', selected_condition + '.json')
         if filename:
             condition_data = load(filename)
             creature_data['Conditions'].append(condition_data)
@@ -1412,6 +1569,7 @@ while True:
         window['_DELETECONDITION_'].update(visible=action_data['Effect'] == 'Apply Condition')
         window['_ConditionList_'].update(visible=action_data['Effect'] == 'Apply Condition')
         window['_CONCENTRATION_'].update(visible=action_data['Effect'] == 'Apply Condition')
+        window['_EFFECTSSIDEBAR_'].update(visible=action_data['Effect'] == 'Apply Condition')
     elif event == '_ACTIONTYPE_':
         window['_ATTACKONLY_'].update(visible=values['_ACTIONTYPE_'] == 'Attack Roll')
         window['_ATTACKBONUS_'].update(visible=values['_ACTIONTYPE_'] == 'Attack Roll')
@@ -1437,6 +1595,7 @@ while True:
         window['_DELETECONDITION_'].update(visible=values['_EFFECT_'] == 'Apply Condition')
         window['_ConditionList_'].update(visible=values['_EFFECT_'] == 'Apply Condition')
         window['_CONCENTRATION_'].update(visible=values['_EFFECT_'] == 'Apply Condition')
+        window['_EFFECTSSIDEBAR_'].update(visible=values['_EFFECT_'] == 'Apply Condition')
     
     elif event == '_ADDDAMAGE_':
         damage_roll = values['_DAMAGEROLL_']
@@ -1450,8 +1609,9 @@ while True:
         damage_data.remove(selected_action)
         window['_DamageList_'].update(damage_data)
     
-    elif event == '_ADDCONDITION_':
-        filename = sg.popup_get_file('Load Condition Data', file_types=(('JSON Files', '*.json'),))
+    elif event == '_ADDCONDITION_' and values['_ACTIONCONDITIONSSIDEBAR_']:
+        selected_condition = values['_ACTIONCONDITIONSSIDEBAR_'][0]
+        filename = os.path.join(os.getcwd(), 'Conditions', selected_condition + '.json')
         if filename:
             condition_data = load(filename)
             action_data['Conditions'].append(condition_data)
@@ -1510,38 +1670,45 @@ while True:
             sg.popup(f'Action data loaded from {filename}', title='Load Successful')
     
     #Simulator Events
-    elif event == 'Add Creature 1':
-        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
-        if filenames:
-            filename_list = filenames.split(";")
-            for filename in filename_list:
-                creature_data = load(filename)
-                simulation_data['Team1'].append(creature_data)
-                window['_TEAM1_'].update(simulation_data['Team1'])
-    elif event == 'Add Creature 2':
-        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
-        if filenames:
-            filename_list = filenames.split(";")
-            for filename in filename_list:
-                creature_data = load(filename)
-                simulation_data['Team2'].append(creature_data)
-                window['_TEAM2_'].update(simulation_data['Team2'])
-    elif event == 'Add Creature 3':
-        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
-        if filenames:
-            filename_list = filenames.split(";")
-            for filename in filename_list:
-                creature_data = load(filename)
-                simulation_data['Team3'].append(creature_data)
-                window['_TEAM3_'].update(simulation_data['Team3'])
-    elif event == 'Add Creature 4':
-        filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
-        if filenames:
-            filename_list = filenames.split(";")
-            for filename in filename_list:
-                creature_data = load(filename)
-                simulation_data['Team4'].append(creature_data)
-                window['_TEAM4_'].update(simulation_data['Team4'])
+    elif event == 'Add Creature 1' and values['_CREATURESSIMULATOR_']:
+        selected_creature = values['_CREATURESSIMULATOR_'][0]
+        filename = os.path.join(os.getcwd(), 'Creatures', selected_creature + '.json')
+        creature_data = load(filename)
+        simulation_data['Team1'].append(creature_data)
+        window['_TEAM1_'].update(simulation_data['Team1'])
+        #filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
+        #if filenames:
+        #    filename_list = filenames.split(";")
+        #    for filename in filename_list:
+        #        creature_data = load(filename)
+        #        simulation_data['Team1'].append(creature_data)
+        #        window['_TEAM1_'].update(simulation_data['Team1'])
+    elif event == 'Add Creature 2' and values['_CREATURESSIMULATOR_']:
+        selected_creature = values['_CREATURESSIMULATOR_'][0]
+        filename = os.path.join(os.getcwd(), 'Creatures', selected_creature + '.json')
+        creature_data = load(filename)
+        simulation_data['Team2'].append(creature_data)
+        window['_TEAM2_'].update(simulation_data['Team2'])
+    
+        #filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
+        #if filenames:
+        #    filename_list = filenames.split(";")
+        #    for filename in filename_list:
+        #        creature_data = load(filename)
+        #        simulation_data['Team2'].append(creature_data)
+        #        window['_TEAM2_'].update(simulation_data['Team2'])
+    elif event == 'Add Creature 3' and values['_CREATURESSIMULATOR_']:
+        selected_creature = values['_CREATURESSIMULATOR_'][0]
+        filename = os.path.join(os.getcwd(), 'Creatures', selected_creature + '.json')
+        creature_data = load(filename)
+        simulation_data['Team3'].append(creature_data)
+        window['_TEAM3_'].update(simulation_data['Team3'])
+    elif event == 'Add Creature 4' and values['_CREATURESSIMULATOR_']:
+        selected_creature = values['_CREATURESSIMULATOR_'][0]
+        filename = os.path.join(os.getcwd(), 'Creatures', selected_creature + '.json')
+        creature_data = load(filename)
+        simulation_data['Team4'].append(creature_data)
+        window['_TEAM4_'].update(simulation_data['Team4'])
             
     elif event == 'Remove Creature 1' and values['_TEAM1_']:
         selected_creature = values['_TEAM1_'][0]
@@ -1573,12 +1740,16 @@ while True:
             
     elif event == 'Simulate':
         iterations = int(values['_ITERATIONS_']) if values['_ITERATIONS_'] else 1
-        full_logs = True if values['_FULLLOGS_'] == 'True' else False
+        full_logs = values['_FULLLOGS_']
         winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], iterations, full_logs)
         window['_SIMULATIONRESULTS_'].update(winratetext)
+        window['Logs_Button'].update(visible=full_logs)
+        
+    elif event == 'Logs_Button':
+        os.startfile('Battle Log.txt')
     
     #Search Events
-    elif values['_INPUTCREATURE_'] != '' or values['_INPUTCONDITION_'] != '' or values['_INPUTACTION_'] != '' :
+    elif values['_INPUTCREATURE_'] != '' or values['_INPUTCONDITION_'] != '' or values['_INPUTACTION_'] != '' or values['_INPUTCREATUREACTION_'] != '' or values['_INPUTCREATURECONDITION_'] != '' or values['_INPUTCREATURESIMULATOR_'] != '' or values['_INPUTACTIONCONDITION_'] != '':
         search = values['_INPUTCREATURE_']
         new_values = [x for x in get_creatures_list() if search.lower() in x.lower()]
         window.Element('_CREATURES_').Update(new_values)
@@ -1588,9 +1759,27 @@ while True:
         search = values['_INPUTACTION_']
         new_values = [x for x in get_actions_list() if search.lower() in x.lower()]
         window.Element('_ACTIONS_').Update(new_values)
+        search = values['_INPUTCREATUREACTION_']
+        new_values = [x for x in get_actions_list() if search.lower() in x.lower()]
+        window.Element('_CREATUREACTIONSSIDEBAR_').Update(new_values)
+        search = values['_INPUTCREATURECONDITION_']
+        new_values = [x for x in get_conditions_list() if search.lower() in x.lower()]
+        window.Element('_CREATURECONDITIONSSIDEBAR_').Update(new_values)
+        search = values['_INPUTCREATURESIMULATOR_']
+        new_values = [x for x in get_creatures_list() if search.lower() in x.lower()]
+        window.Element('_CREATURESSIMULATOR_').Update(new_values)
+        search = values['_INPUTACTIONCONDITION_']
+        new_values = [x for x in get_conditions_list() if search.lower() in x.lower()]
+        window.Element('_ACTIONCONDITIONSSIDEBAR_').Update(new_values)
+    elif event == '_CREATURESSIMULATOR_' or event == '_CREATUREACTIONSSIDEBAR_' or event == '_CREATURECONDITIONSSIDEBAR_' or event == '_ACTIONCONDITIONSSIDEBAR_':
+        pass
     else:
         window.Element('_CREATURES_').Update(get_creatures_list())
         window.Element('_CONDITIONS_').Update(get_conditions_list())
         window.Element('_ACTIONS_').Update(get_actions_list())
+        window.Element('_CREATURESSIMULATOR_').Update(get_creatures_list())
+        window.Element('_CREATUREACTIONSSIDEBAR_').Update(get_actions_list())
+        window.Element('_CREATURECONDITIONSSIDEBAR_').Update(get_conditions_list())
+        window.Element('_ACTIONCONDITIONSSIDEBAR_').Update(get_conditions_list())
         
 window.close()

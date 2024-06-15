@@ -1,0 +1,344 @@
+LEVEL	EASY	MEDIUM	HARD	DEADLY
+1		100		200		300		400
+3		300		600		900		1600
+5		1000	2000	3000	4400
+9		2200	4400	6400	9600
+11		3200	6400	9600	14400
+#13		4400	8800	13600	20400
+#17		8000	15600	23600	35200
+#20		11200	22800	34000	50800
+
+1 Easy: Orc x1
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 1.135 rounds
+mortes (totais): {'Orc': 1000, 'Fighter lvl 1': 85, 'Rogue lvl 1': 4}
+Incerteza média: 0.0005
+Permanencia média do time 1: 0.999
+Permanencia média do time 2: 0.0005
+Vantagem Decisiva para time 1: 0.01666666666666672
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9588250000000011
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 1.2973511219024658
+
+1 Medium: Merfolk x4
+
+Team 1 winrate: 99.8%
+Team 2 winrate: 0.2%
+Duração média: 2.584 rounds
+mortes (totais): {'Merfolk 1': 1000, 'Merfolk 2': 1000, 'Rogue lvl 1': 473, 'Merfolk 3': 998, 'Merfolk 4': 998, 'Wizard lvl 1': 138, 'Fighter lvl 1': 6, 'Cleric lvl 1': 4}
+Incerteza média: 0.0066674603174603185
+Permanencia média do time 1: 0.987947619047619
+Permanencia média do time 2: 0.004547619047619048
+Vantagem Decisiva para time 1: 0.025000000000000022
+Vantagem Decisiva para time 2: -0.21590909090909088
+Porcentagem de HP restante médio para time 1: 0.8010020040080136
+Porcentagem de HP restante médio para time 2: 0.32954545454545453
+Tempo de execução: 3.622805595397949
+
+1 Hard: Orc x2
+
+Team 1 winrate: 99.5%
+Team 2 winrate: 0.5%
+Duração média: 1.867 rounds
+mortes (totais): {'Orc 1': 998, 'Orc 2': 996, 'Fighter lvl 1': 270, 'Rogue lvl 1': 79, 'Wizard lvl 1': 21, 'Cleric lvl 1': 5}
+Incerteza média: 0.009919047619047619
+Permanencia média do time 1: 0.9791761904761904
+Permanencia média do time 2: 0.0091
+Vantagem Decisiva para time 1: 0.275
+Vantagem Decisiva para time 2: -0.33333333333333337
+Porcentagem de HP restante médio para time 1: 0.8687939698492495
+Porcentagem de HP restante médio para time 2: 0.21333333333333332
+Tempo de execução: 2.28950572013855
+
+1 Deadly: Skeleton x4
+
+Team 1 winrate: 94.0%
+Team 2 winrate: 6.0%
+Duração média: 3.8 rounds
+mortes (totais): {'Rogue lvl 1': 846, 'Skeleton 1': 997, 'Skeleton 2': 984, 'Skeleton 3': 960, 'Wizard lvl 1': 464, 'Skeleton 4': 940, 'Fighter lvl 1': 93, 'Cleric lvl 1': 76}
+Incerteza média: 0.04410093795093798
+Permanencia média do time 1: 0.8864997474747475
+Permanencia média do time 2: 0.053469047619047624
+Vantagem Decisiva para time 1: 0.33269230769230773
+Vantagem Decisiva para time 2: -0.1692307692307692
+Porcentagem de HP restante médio para time 1: 0.6513563829787227
+Porcentagem de HP restante médio para time 2: 0.3554487179487182
+Tempo de execução: 4.961115598678589
+
+3 Easy: Orc x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 1.381 rounds
+mortes (totais): {'Orc 1': 1000, 'Orc 2': 1000, 'Fighter lvl 3': 5, 'Wizard lvl 3': 1}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.11458333333333326
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9722500000000003
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 2.7521328926086426
+
+3 Medium: Ghoul x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 1.841 rounds
+mortes (totais): {'Ghoul 1': 1000, 'Ghoul 2': 1000, 'Rogue lvl 3': 51, 'Wizard lvl 3': 17}
+Incerteza média: 0.001
+Permanencia média do time 1: 0.9985
+Permanencia média do time 2: 0.0005
+Vantagem Decisiva para time 1: 0.07102272727272729
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9354687499999996
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 3.430771589279175
+
+3 Hard: Ghoul x1 + Zombie x5
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 4.115 rounds
+mortes (totais): {'Zombie 1': 1000, 'Zombie 3': 1000, 'Zombie 2': 1000, 'Zombie 4': 1000, 'Zombie 5': 1000, 'Ghoul': 1000, 'Rogue lvl 3': 74, 'Wizard lvl 3': 111, 'Fighter lvl 3': 9}
+Incerteza média: 0.007898809523809528
+Permanencia média do time 1: 0.9915178571428571
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.19412878787878785
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8469062499999997
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 10.31236743927002
+
+3 Deadly: Animated Armor x4
+
+Team 1 winrate: 93.0%
+Team 2 winrate: 7.0%
+Duração média: 6.335 rounds
+mortes (totais): {'Animated Armor 1': 998, 'Animated Armor 2': 977, 'Fighter lvl 3': 411, 'Animated Armor 3': 947, 'Animated Armor 4': 930, 'Wizard lvl 3': 247, 'Rogue lvl 3': 108, 'Cleric lvl 3': 70}
+Incerteza média: 0.04361995498052003
+Permanencia média do time 1: 0.8820679637055411
+Permanencia média do time 2: 0.05380747667365313
+Vantagem Decisiva para time 1: 0.32670454545454547
+Vantagem Decisiva para time 2: -0.02840909090909091
+Porcentagem de HP restante médio para time 1: 0.746975806451613
+Porcentagem de HP restante médio para time 2: 0.31839826839826857
+Tempo de execução: 15.420735120773315
+
+5 Easy: Orc x5
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 1.281 rounds
+mortes (totais): {'Orc 1': 1000, 'Orc 2': 1000, 'Orc 3': 1000, 'Orc 5': 1000, 'Orc 4': 1000, 'Rogue lvl 5': 2, 'Wizard lvl 5': 4}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.31587719298245615
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9711710526315781
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 4.072917222976685
+
+
+5 Medium: Ghoul x5
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 1.889 rounds
+mortes (totais): {'Ghoul 2': 1000, 'Ghoul 1': 1000, 'Ghoul 3': 1000, 'Ghoul 5': 1000, 'Ghoul 4': 1000, 'Wizard lvl 5': 42, 'Rogue lvl 5': 1}
+Incerteza média: 0.0013166666666666667
+Permanencia média do time 1: 0.9986833333333333
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.11327751196172242
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9269144736842095
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 5.461362361907959
+
+
+5 Hard: Ogre x3 + Goblin x3
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 2.599 rounds
+mortes (totais): {'Goblin 1': 1000, 'Ogre 1': 1000, 'Goblin 3': 1000, 'Ogre 2': 1000, 'Goblin 2': 1000, 'Ogre 3': 1000, 'Wizard lvl 5': 128, 'Fighter lvl 5': 11, 'Rogue lvl 5': 4}
+Incerteza média: 0.0004107142857142857
+Permanencia média do time 1: 0.9993392857142857
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.19889686337054757
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8747105263157889
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 11.148658990859985
+
+5 Deadly: Wight x3 + Zombie x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 2.989 rounds
+mortes (totais): {'Zombie 1': 1000, 'Zombie 2': 1000, 'Wight 2': 1000, 'Wight 1': 1000, 'Wight 3': 1000, 'Wizard lvl 5': 108, 'Fighter lvl 5': 13, 'Rogue lvl 5': 2, 'Cleric lvl 5': 1}
+Incerteza média: 0.00014285714285714284
+Permanencia média do time 1: 0.999
+Permanencia média do time 2: 0.0007142857142857143
+Vantagem Decisiva para time 1: 0.07633784181123199
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.909105263157893
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 8.96601414680481
+
+9 Easy: Owlbear x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 1.862 rounds
+mortes (totais): {'Owlbear 1': 1000, 'Owlbear 2': 1000}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.0755122691626613
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9595111940298491
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 4.383229494094849
+
+
+9 Medium: Wight x3 + Zombie x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 2.638 rounds
+mortes (totais): {'Zombie 2': 1000, 'Zombie 1': 1000, 'Wight 1': 1000, 'Wight 2': 1000, 'Wight 3': 1000, 'Wizard lvl 9': 22}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.1973025931793546
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9447574626865668
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 9.210080862045288
+
+9 Hard: Minotaur x3 + Ogre x2
+
+Team 1 winrate: 99.4%
+Team 2 winrate: 0.6%
+Duração média: 3.852 rounds
+mortes (totais): {'Minotaur 1': 996, 'Ogre 1': 1000, 'Minotaur 2': 995, 'Ogre 2': 999, 'Minotaur 3': 994, 'Fighter lvl 9': 122, 'Wizard lvl 9': 139, 'Cleric lvl 9': 9, 'Rogue lvl 9': 7}
+Incerteza média: 0.01348333333333333
+Permanencia média do time 1: 0.9754563492063492
+Permanencia média do time 2: 0.008627777777777776
+Vantagem Decisiva para time 1: 0.28043309464239496
+Vantagem Decisiva para time 2: -0.22774135104822707
+Porcentagem de HP restante médio para time 1: 0.7602030090993714
+Porcentagem de HP restante médio para time 2: 0.34826589595375723
+Tempo de execução: 14.531422853469849
+
+9 Deadly: Stone Giant x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 4.164 rounds
+mortes (totais): {'Stone Giant 1': 1000, 'Stone Giant 2': 1000, 'Fighter lvl 9': 179, 'Wizard lvl 9': 132, 'Cleric lvl 9': 2}
+Incerteza média: 0.012792857142857135
+Permanencia média do time 1: 0.9766623015873013
+Permanencia média do time 2: 0.005165873015873015
+Vantagem Decisiva para time 1: 0.04424307036247335
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8152313432835829
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 10.064814805984497
+
+11 Easy: Ogre x2 + Bugbear x2 + Orc x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 2.03 rounds
+mortes (totais): {'Ogre 1': 1000, 'Ogre 2': 1000, 'Orc 2': 1000, 'Orc 1': 1000, 'Bugbear 1': 1000, 'Bugbear 2': 1000, 'Wizard lvl 11': 11}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.15097491344226455
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9470521472392639
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 7.7667248249053955
+
+
+11 Medium: Minotaur x3 + Ogre x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 2.708 rounds
+mortes (totais): {'Ogre 1': 1000, 'Ogre 2': 1000, 'Minotaur 1': 1000, 'Minotaur 2': 1000, 'Minotaur 3': 1000, 'Wizard lvl 11': 47, 'Rogue lvl 11': 1, 'Fighter lvl 11': 1}
+Incerteza média: 0.0012357142857142857
+Permanencia média do time 1: 0.9984785714285714
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.062413560764566056
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8409294478527622
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 10.803211450576782
+
+
+11 Hard: Stone Giant x2
+
+Team 1 winrate: 100.0%
+Team 2 winrate: 0.0%
+Duração média: 2.937 rounds
+mortes (totais): {'Stone Giant 1': 1000, 'Stone Giant 2': 1000, 'Wizard lvl 11': 43, 'Fighter lvl 11': 11}
+Incerteza média: 0.0017
+Permanencia média do time 1: 0.9983
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.08596260590125626
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8914049079754587
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 8.07775092124939
+
+
+11 Deadly: Treant x1 + Ettin x2
+
+Team 1 winrate: 99.9%
+Team 2 winrate: 0.1%
+Duração média: 4.153 rounds
+mortes (totais): {'Ettin 1': 1000, 'Ettin 2': 1000, 'Treant (Child) 1': 1000, 'Treant': 999, 'Treant (Child) 2': 999, 'Fighter lvl 11': 74, 'Wizard lvl 11': 21, 'Cleric lvl 11': 5, 'Rogue lvl 11': 1}
+Incerteza média: 0.003529413886766829
+Permanencia média do time 1: 0.994602493421611
+Permanencia média do time 2: 0.001
+Vantagem Decisiva para time 1: 0.10521892596016472
+Vantagem Decisiva para time 2: -0.23545045802168246
+Porcentagem de HP restante médio para time 1: 0.8614565485731126
+Porcentagem de HP restante médio para time 2: 0.2722602739726027
+Tempo de execução: 14.613587617874146
+
+
+
+
+
+
+
+
+13 Easy: Wight x3 + Zombie x2
+13 Medium: Red Dragon Wyrmling x4
+13 Hard: Hydra x1 + Troll x1 + Ettin x1
+13 Deadly: Roc x1 + Young Red Dragon x1
+
+17 Easy: Vampire Spawn x2 + Ghoul x2
+17 Medium: Iron Golem x1
+17 Hard: Erinyes x1 + Roc x1
+17 Deadly: Adult Black Dragon x2
+
+20 Easy: Hydra x1 + Owlbear x2
+20 Medium: Vampire x1 + Clay Golem x1
+20 Hard: Ancient Black Dragon x1
+20 Deadly: Kraken x1
+
+
+Player Characters:
+Human Fighter (Champion)
+High Elf Wizard (Evocation)
+Hill Dwarf Cleric (Life)
+Lightfoot Halfling Rogue (Thief)
