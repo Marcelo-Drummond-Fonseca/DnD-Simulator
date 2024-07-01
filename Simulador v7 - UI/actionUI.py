@@ -25,6 +25,7 @@ layout_action_costs = [
 ]
 
 layout_action_conditions_sidebar = [
+    [sg.Text('Available Conditions')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTACTIONCONDITION_', enable_events=True)],
     [sg.Listbox(values=get_conditions_list(), size=(20, 30), key='_ACTIONCONDITIONSSIDEBAR_', enable_events=True)],
 ]
@@ -72,9 +73,10 @@ layout_action_stats = [
 ]
 
 layout_actions_sidebar = [
+    [sg.Text('Actions')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTACTION_', enable_events=True)],
     [sg.Listbox(values=get_actions_list(), size=(20, 30), key='_ACTIONS_', enable_events=True)],
-    [sg.Button('Add', use_ttk_buttons=True, key='Create New Action')]
+    [sg.Button('Create New', use_ttk_buttons=True, key='Create New Action')]
 ]
 
 layout_actions = [

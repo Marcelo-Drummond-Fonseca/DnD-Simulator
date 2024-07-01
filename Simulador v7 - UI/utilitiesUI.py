@@ -35,8 +35,9 @@ def load(filename):
 		
 		
 #Function to get the names of all creatures in the "Creatures" folder.        
-def get_creatures_list():
-    creatures_folder = os.path.join(os.getcwd(), 'Creatures')
+def get_creatures_list(party_only = False):
+    if party_only: creatures_folder = os.path.join(os.getcwd(), 'Creatures\Party')
+    else: creatures_folder = os.path.join(os.getcwd(), 'Creatures')
     if not os.path.exists(creatures_folder):
         os.makedirs(creatures_folder)
 

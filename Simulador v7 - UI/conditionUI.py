@@ -74,9 +74,10 @@ layout_conditions_stats = [
 ]
 
 layout_conditions_sidebar = [
+    [sg.Text('Conditions')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCONDITION_', enable_events=True)],
     [sg.Listbox(values=get_conditions_list(), size=(20, 30), key='_CONDITIONS_', enable_events=True)],
-    [sg.Button('Add', use_ttk_buttons=True, key='Create New Condition')]
+    [sg.Button('Create New', use_ttk_buttons=True, key='Create New Condition')]
 ]
 
 layout_conditions = [

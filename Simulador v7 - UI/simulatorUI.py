@@ -231,7 +231,7 @@ def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations, full_lo
         if guaranteed_wins_2: decisive_advantage_2 = max(guaranteed_wins_2)
             
         
-        logging.info('Team 1 winrate: ' + str(round(winrate1_2*100/iterations,2)) + '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
+        logging.info('Party winrate: ' + str(round(winrate1_2*100/iterations,2)) + '%\nEnemy 1 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
         logging.info(f'Duração média: {duration_total/iterations} rounds')
         logging.info(f'mortes (totais): {deaths_total}')
         logging.info(f'Incerteza média: {uncertainty_total/iterations}')
@@ -243,77 +243,87 @@ def run_simulation(team1, team2, team3, team4, rest1, rest2, iterations, full_lo
         logging.info(f'Porcentagem de HP restante médio para time 2: {hp_percents2/winrate2 if winrate2 != 0 else 0}')
         end = time.time()
         logging.info(f'Tempo de execução: {end-start}')
-        return('Team 1 winrate: ' + str(round(winrate1_2*100/iterations,2)) + 
-        '%\nTeam 2 winrate: ' + str(round(winrate2*100/iterations,2)) +
+        result = open("Results.txt", "w")
+        result.write('Party winrate: ' + str(round(winrate1_2*100/iterations,2)) + 
+        '%\nEnemy 1 winrate: ' + str(round(winrate2*100/iterations,2)) +
         '%\nAverage Duration (in rounds): ' + str(duration_total/iterations) +
         '\nTotal Deaths: ' + str(deaths_total) +
-        '\nAverage remaining HP for Team 1 on a win: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
-        '\nAverage remaining HP for Team 2 on a win: ' + str(round(hp_percents2/winrate2,2) if winrate2 != 0 else 0))
+        '\nAverage remaining HP for Party on a win: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
+        '\nAverage remaining HP for Enemy 1 on a win: ' + str(round(hp_percents2/winrate2,2) if winrate2 != 0 else 0))
+        return('Party winrate: ' + str(round(winrate1_2*100/iterations,2)) + 
+        '%\nEnemy 1 winrate: ' + str(round(winrate2*100/iterations,2)) + '%')
         
     
     elif len(opponents) == 2:
-        logging.info(f'Team 1 dungeon clear rate: {round(100*winrate1_3/iterations)}%')
+        logging.info(f'Party dungeon clear rate: {round(100*winrate1_3/iterations)}%')
         logging.info(f'mortes (totais): {deaths_total}')
         logging.info(f'Porcentagem de HP restante médio após primeiro combate: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
         logging.info(f'Porcentagem de HP restante médio após segundo combate: {hp_percents1_3/winrate1_3 if winrate1_3 != 0 else 0}')
-        return('Team 1 clear rate: ' + str(round(winrate1_3*100/iterations,2)) + '%' +
+        result = open("Results.txt", "w")
+        result.write('Party clear rate: ' + str(round(winrate1_3*100/iterations,2)) + '%' +
         '\nTotal Deaths: ' + str(deaths_total) +
-        '\nAverage remaining HP for Team 1 after first combat: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
-        '%\nAverage remaining HP for Team 1 after second combat: ' + str(round(hp_percents1_3/winrate1_3,2) if winrate1_3 != 0 else 0) + '%')
+        '\nAverage remaining HP for Party after first combat: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
+        '%\nAverage remaining HP for Party after second combat: ' + str(round(hp_percents1_3/winrate1_3,2) if winrate1_3 != 0 else 0) + '%')
+        return('Party clear rate: ' + str(round(winrate1_3*100/iterations,2)) + '%')
         
         
     elif len(opponents) == 3:
-        logging.info(f'Team 1 dungeon clear rate: {round(100*winrate1_4/iterations)}%')
+        logging.info(f'Party dungeon clear rate: {round(100*winrate1_4/iterations)}%')
         logging.info(f'mortes (totais): {deaths_total}')
         logging.info(f'Porcentagem de HP restante médio após primeiro combate: {hp_percents1_2/winrate1_2 if winrate1_2 != 0 else 0}')
         logging.info(f'Porcentagem de HP restante médio após segundo combate: {hp_percents1_3/winrate1_3 if winrate1_3 != 0 else 0}')
         logging.info(f'Porcentagem de HP restante médio após terceiro combate: {hp_percents1_4/winrate1_4 if winrate1_4 != 0 else 0}')
-        return('Team 1 clear rate: ' + str(round(winrate1_4*100/iterations,2)) + '%' +
+        result = open("Results.txt", "w")
+        result.write('Team 1 clear rate: ' + str(round(winrate1_4*100/iterations,2)) + '%' +
         '\nTotal Deaths: ' + str(deaths_total) +
-        '\nAverage remaining HP for Team 1 after first combat: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
-        '%\nAverage remaining HP for Team 1 after second combat: ' + str(round(hp_percents1_3/winrate1_3,2) if winrate1_3 != 0 else 0) +
-        '%\nAverage remaining HP for Team 1 after third combat: ' + str(round(hp_percents1_4/winrate1_4,2) if winrate1_4 != 0 else 0) + '%')
+        '\nAverage remaining HP for Party after first combat: ' + str(round(hp_percents1_2/winrate1_2,2) if winrate1_2 != 0 else 0) +
+        '%\nAverage remaining HP for Party after second combat: ' + str(round(hp_percents1_3/winrate1_3,2) if winrate1_3 != 0 else 0) +
+        '%\nAverage remaining HP for Party after third combat: ' + str(round(hp_percents1_4/winrate1_4,2) if winrate1_4 != 0 else 0) + '%')
+        return('Team 1 clear rate: ' + str(round(winrate1_4*100/iterations,2)) + '%')
 
 
 #SIMULATOR UI
 
 layout_creatures_simulator_sidebar = [
+    [sg.Text('Available Creatures')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURESIMULATOR_', enable_events=True)],
-    [sg.Listbox(values=get_creatures_list(), size=(20, 30), key='_CREATURESSIMULATOR_', enable_events=True)],
-    [sg.Button('Add Selected to Team 1', use_ttk_buttons=True, key='Add Creature 1')],
-    [sg.Button('Add Selected to Team 2', use_ttk_buttons=True, key='Add Creature 2')],
-    [sg.Button('Add Selected to Team 3', use_ttk_buttons=True, key='Add Creature 3')],
-    [sg.Button('Add Selected to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
+    [sg.Listbox(values=get_creatures_list(False), size=(20, 30), key='_CREATURESSIMULATOR_', enable_events=True)],
+    [sg.Button('Add Selected to Party', size=(22,1), use_ttk_buttons=True, key='Add Creature 1')],
+    [sg.Button('Add Selected to Enemy 1', size=(22,1), use_ttk_buttons=True, key='Add Creature 2')],
+    [sg.Button('Add Selected to Enemy 2', size=(22,1), use_ttk_buttons=True, key='Add Creature 3')],
+    [sg.Button('Add Selected to Enemy 3', size=(22,1), use_ttk_buttons=True, key='Add Creature 4')],
+    [sg.Text('Party Only'),sg.Checkbox('', default=False, key='_PARTYONLYSIMULATOR_', visible=True, enable_events=True)],
 ]
 
 layout_simulator_team1 = [
-    [sg.Text("Team 1")],
+    [sg.Text("Party")],
     [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True)],
-    [sg.Button('Remove Selected from Team 1', use_ttk_buttons=True, key='Remove Creature 1')],
+    [sg.Button('Remove Selected from Party', use_ttk_buttons=True, key='Remove Creature 1')],
 ]
 
 layout_simulator_team2 = [
-    [sg.Text("Team 2")],
+    [sg.Text("Enemy 1")],
     [sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True)],
-    [sg.Button('Remove Selected from Team 2', use_ttk_buttons=True, key='Remove Creature 2')],
+    [sg.Button('Remove Selected from Enemy 1', use_ttk_buttons=True, key='Remove Creature 2')],
 ]
 
 layout_simulator_team3 = [
-    [sg.Text("Team 3")],
+    [sg.Text("Enemy 2")],
     [sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True)],
-    [sg.Button('Remove Selected from Team 3', use_ttk_buttons=True, key='Remove Creature 3')],
-    [sg.Text('Time Between Fights?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST1_')],
+    [sg.Button('Remove Selected from Enemy 2', use_ttk_buttons=True, key='Remove Creature 3')],
+    [sg.Text('Rest?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST1_', default_value='No Rest')],
 ]
 
 layout_simulator_team4 = [
-    [sg.Text("Team 4")],
+    [sg.Text("Enemy 3")],
     [sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
-    [sg.Button('Remove Selected from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
-    [sg.Text('Time Between Fights?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST2_')],
+    [sg.Button('Remove Selected from Enemy 3', use_ttk_buttons=True, key='Remove Creature 4')],
+    [sg.Text('Rest?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST2_', default_value='No Rest')],
 ]
 
 layout_simulator_main = [
-    sg.vtop([sg.Column(layout_simulator_team1, element_justification='c'), sg.Column(layout_simulator_team2, element_justification='c'), sg.Column(layout_simulator_team3, element_justification='c'), sg.Column(layout_simulator_team4, element_justification='c')]),
+    [sg.Text('Amount of battles in a row: '),sg.DropDown(['One Battle','Two Battles','Three Battles'], key='_BATTLEAMOUNT_', enable_events=True, default_value='One Battle')],
+    sg.vtop([sg.Column(layout_simulator_team1, element_justification='c'), sg.Column(layout_simulator_team2, element_justification='c'), sg.Column(layout_simulator_team3, element_justification='c', visible=False, key='_TEAM3COLUMN_'), sg.Column(layout_simulator_team4, element_justification='c', visible=False, key='_TEAM4COLUMN_')]),
 #   [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
 #   [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
 #   [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
@@ -321,11 +331,12 @@ layout_simulator_main = [
     [sg.Text('Complete Logs?'),sg.Checkbox('', default=False, key='_FULLLOGS_', visible=True)],
     [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
     [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')],
+    [sg.Button('Open Detailed Results', use_ttk_buttons=True, key='Results_Button', visible=False)],
     [sg.Button('Open Complete Logs', use_ttk_buttons=True, key='Logs_Button', visible=False)],
 ]
 
 layout_simulator = [
-    sg.vtop([sg.Column(layout_simulator_main), sg.VerticalSeparator(), sg.Column(layout_creatures_simulator_sidebar)])
+    [sg.vtop(sg.Column(layout_simulator_main)), sg.Push(), sg.VerticalSeparator(), sg.Column(layout_creatures_simulator_sidebar, element_justification='c')],
 ]
 
 # Create the main window layout with the menu
@@ -416,23 +427,46 @@ def events(event, values,window):
         window['_TEAM4_'].update(team_data)  
         simulation_data['Team4'] = window['_TEAM4_'].get_list_values()    
             
+    elif event == '_BATTLEAMOUNT_':
+        if values['_BATTLEAMOUNT_'] == 'One Battle':
+            window['_TEAM3COLUMN_'].update(visible=False)
+            window['_TEAM4COLUMN_'].update(visible=False)
+        if values['_BATTLEAMOUNT_'] == 'Two Battles':
+            window['_TEAM3COLUMN_'].update(visible=True)
+            window['_TEAM4COLUMN_'].update(visible=False)
+        if values['_BATTLEAMOUNT_'] == 'Three Battles':
+            window['_TEAM3COLUMN_'].update(visible=True)
+            window['_TEAM4COLUMN_'].update(visible=True)
+    
+    elif event == '_PARTYONLY_':
+        window.Element('_CREATURESSIMULATOR_').Update(get_creatures_list(values['_PARTYONLYSIMULATOR_']))
+    
     elif event == 'Simulate':
-        iterations = int(values['_ITERATIONS_']) if values['_ITERATIONS_'] else 1
-        full_logs = values['_FULLLOGS_']
-        winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], iterations, full_logs)
-        window['_SIMULATIONRESULTS_'].update(winratetext)
-        window['Logs_Button'].update(visible=full_logs)
+        if simulation_data['Team1'] and simulation_data['Team2']:
+            iterations = int(values['_ITERATIONS_']) if values['_ITERATIONS_'] else 1
+            full_logs = values['_FULLLOGS_']
+            winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], iterations, full_logs)
+            window['_SIMULATIONRESULTS_'].update(winratetext)
+            window['Results_Button'].update(visible=True)
+            window['Logs_Button'].update(visible=full_logs)
+        else:
+            window['_SIMULATIONRESULTS_'].update('Please input at least a team in "Party" and "Enemy 1"')
+            window['Results_Button'].update(visible=False)
+            window['Logs_Button'].update(visible=False)
         
     elif event == 'Logs_Button':
         os.startfile('Battle Log.txt')
+    
+    elif event == 'Results_Button':
+        os.startfile('Results.txt')
     
     elif event == '_CREATURESSIMULATOR_':
         pass
         
     elif values['_INPUTCREATURESIMULATOR_'] != '':
         search = values['_INPUTCREATURESIMULATOR_']
-        new_values = [x for x in get_creatures_list() if search.lower() in x.lower()]
+        new_values = [x for x in get_creatures_list(values['_PARTYONLYSIMULATOR_']) if search.lower() in x.lower()]
         window.Element('_CREATURESSIMULATOR_').Update(new_values)
         
     elif values['_INPUTCREATURESIMULATOR_'] == '':
-        window.Element('_CREATURESSIMULATOR_').Update(get_creatures_list())
+        window.Element('_CREATURESSIMULATOR_').Update(get_creatures_list(values['_PARTYONLYSIMULATOR_']))

@@ -1,6 +1,7 @@
 *.exe
 *.zip
+*.rar
 *.spec
 *.txt
-_pycache_/
+__pycache__/
 build/

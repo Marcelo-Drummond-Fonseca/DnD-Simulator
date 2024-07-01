@@ -7,7 +7,8 @@ import copy
 
 layout_creature_statistics =[
     [sg.VPush()],
-    [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CREATURENAME_', justification='left', enable_events=True)],
+    [sg.Text("Name", size=(4, 1)), sg.Input(size=(50, 1), key='_CREATURENAME_', justification='left', enable_events=True),
+    sg.Text('Party member?'), sg.Checkbox('', default=False, key='_PARTYMEMBER_', visible=True)],
     [sg.Text("HP", size=(2, 1)), sg.Input(size=(5, 1), key='_HP_', justification='left', enable_events=True),
     sg.Text("AC", size=(2, 1)), sg.DropDown(values=[str(i) for i in range(5,31)], size=(5, 1), key='_AC_'),
     sg.Text("Iniciative", size=(10, 1)), sg.DropDown(values=[str(i) for i in range(-3, 13)], size=(5, 1), key='_INICIATIVE_')],
@@ -69,11 +70,13 @@ layout_creature_actions_editor = [
 ]
 
 layout_creature_actions_sidebar = [
+    [sg.Text('Creature Actions')],
     [sg.Listbox(values=[], size=(20, 30), key='_ActionList_', enable_events=True)],
     [sg.Button('Remove Selected', use_ttk_buttons=True, key='Delete Action')]
 ]
 
 layout_creature_all_actions_sidebar = [
+    [sg.Text('Available Actions')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATUREACTION_', enable_events=True)],
     [sg.Listbox(values=get_actions_list(), size=(20, 30), key='_CREATUREACTIONSSIDEBAR_', enable_events=True)],
     [sg.Button('Add Selected', use_ttk_buttons=True, key='Add Action')],
@@ -88,13 +91,14 @@ layout_creature_actions = [
 ]
 
 layout_creature_conditions_sidebar = [
+    [sg.Text('Available Conditions')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURECONDITION_', enable_events=True)],
     [sg.Listbox(values=get_conditions_list(), size=(20, 30), key='_CREATURECONDITIONSSIDEBAR_', enable_events=True)],
     [sg.Button('Add Selected', use_ttk_buttons=True, key='_ADDCREATURECONDITION_')],
 ]
 
 layout_creature_conditions_main = [
-    [sg.Text("Conditions")],
+    [sg.Text("Creature conditions")],
     [sg.Button('Remove Selected', use_ttk_buttons=True, key='_DELETECREATURECONDITION_')],
     [sg.Listbox(values=[], size=(50, 5), key='_CreatureConditionList_')]
 ]
@@ -108,18 +112,20 @@ layout_creature_conditions = [
 layout_creature_stats = [
     [sg.TabGroup([[sg.Tab('Basics',layout_creature_statistics),
     sg.Tab('Actions',layout_creature_actions),
-    sg.Tab('Combos',layout_creature_combos),
+    sg.Tab('Conditions',layout_creature_conditions),
     sg.Tab('Resources',layout_creature_resources),
-    sg.Tab('Conditions',layout_creature_conditions)]])],
+    sg.Tab('Combos',layout_creature_combos)]])],
     
     [sg.Button('Save', size=(10, 1), pad=((20, 0), 0), use_ttk_buttons=True, key='Save Creature'),
     sg.Button('Load', size=(10, 1), use_ttk_buttons=True, key='Load Creature')]
 ]
 
 layout_creatures_sidebar = [
+    [sg.Text('Creatures')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURE_', enable_events=True)],
-    [sg.Listbox(values=get_creatures_list(), size=(20, 30), key='_CREATURES_', enable_events=True)],
-    [sg.Button('Add', use_ttk_buttons=True, key='Create New Creature')]
+    [sg.Listbox(values=get_creatures_list(False), size=(20, 30), key='_CREATURES_', enable_events=True)],
+    [sg.Button('Create New', use_ttk_buttons=True, key='Create New Creature')],
+    [sg.Text('Party Only'),sg.Checkbox('', default=False, key='_PARTYONLY_', visible=True, enable_events=True)],
 ]
 
 layout_creatures = [
@@ -139,7 +145,8 @@ base_creature_data = {
     'Combos': [],
     'Resistances': [],
     'AI': 'Damage',
-    'Tags': []
+    'Tags': [],
+    'Party': False,
 }
 
 creature_data = {
@@ -155,6 +162,7 @@ creature_data = {
     'Resistances': [],
     'AI': None,
     'Tags': [],
+    'Party': False,
 }
 
 def update_creature(creature_data,window):
@@ -172,6 +180,8 @@ def update_creature(creature_data,window):
     window['_ResistanceList_'].update(creature_data['Resistances'])
     if 'AI' in creature_data: window['_AI_'].update(creature_data['AI'])
     if 'Tags' in creature_data: window['_CreatureTagList_'].update(creature_data['Tags'])
+    if 'Party' in creature_data: window['_PARTYMEMBER_'].update(creature_data['Party'])
+    else: window['_PARTYMEMBER_'].update(False)
 
 def update_creature_data(values,window):
     creature_data['Name'] = values['_CREATURENAME_']
@@ -186,6 +196,7 @@ def update_creature_data(values,window):
     creature_data['Resistances'] = window['_ResistanceList_'].get_list_values()
     creature_data['AI'] = values['_AI_']
     creature_data['Tags'] = window['_CreatureTagList_'].get_list_values()
+    creature_data['Party'] = values['_PARTYMEMBER_']
     
 def update_creature_action(action,window):
     window['_CREATUREACTIONNAME_'].update(action['Name'])
@@ -234,6 +245,9 @@ def events(event,values,window):
         else:
             creature_data = base_creature_data
         update_creature(creature_data,window)
+    
+    elif event == '_PARTYONLY_':
+        window.Element('_CREATURES_').Update(get_creatures_list(values['_PARTYONLY_']))
     
     elif event == 'Add Resource':
         name = values['_ResourceName_']
@@ -372,7 +386,19 @@ def events(event,values,window):
         if filename:
             save(filename, creature_data)
             sg.popup(f'Creature data saved to {filename}', title='Save Successful')      
-            window.Element('_CREATURES_').Update(get_creatures_list())
+            window.Element('_CREATURES_').Update(get_creatures_list(values['_PARTYONLY_']))
+        
+        #Party stuff
+        filename = os.path.join(os.getcwd(),'Creatures\Party')
+        filename = os.path.join(filename,f"{creature_data['Name']}.json")
+        
+        if creature_data['Party']:
+            if filename:
+                save(filename, creature_data)
+                
+        elif os.path.exists(filename):
+            os.remove(filename)
+        
     elif event == 'Load Creature':
         # Show a file open dialog and get the chosen filename
         filename = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),))
@@ -387,7 +413,7 @@ def events(event,values,window):
     
     elif values['_INPUTCREATURE_'] != '' or values['_INPUTCREATUREACTION_'] != '' or values['_INPUTCREATURECONDITION_'] != '':
         search = values['_INPUTCREATURE_']
-        new_values = [x for x in get_creatures_list() if search.lower() in x.lower()]
+        new_values = [x for x in get_creatures_list(values['_PARTYONLY_']) if search.lower() in x.lower()]
         window.Element('_CREATURES_').Update(new_values)
         search = values['_INPUTCREATUREACTION_']
         new_values = [x for x in get_actions_list() if search.lower() in x.lower()]
@@ -397,7 +423,7 @@ def events(event,values,window):
         window.Element('_CREATURECONDITIONSSIDEBAR_').Update(new_values)
         
     else:
-        window.Element('_CREATURES_').Update(get_creatures_list())
+        window.Element('_CREATURES_').Update(get_creatures_list(values['_PARTYONLY_']))
         window.Element('_CREATUREACTIONSSIDEBAR_').Update(get_actions_list())
         window.Element('_CREATURECONDITIONSSIDEBAR_').Update(get_conditions_list())
         
