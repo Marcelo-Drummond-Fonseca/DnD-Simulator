@@ -288,56 +288,76 @@ layout_creatures_simulator_sidebar = [
     [sg.Text('Available Creatures')],
     [sg.Input(do_not_clear=True, size=(20,1), key='_INPUTCREATURESIMULATOR_', enable_events=True)],
     [sg.Listbox(values=get_creatures_list(False), size=(20, 30), key='_CREATURESSIMULATOR_', enable_events=True)],
-    [sg.Button('Add Selected to Party', size=(22,1), use_ttk_buttons=True, key='Add Creature 1')],
-    [sg.Button('Add Selected to Enemy 1', size=(22,1), use_ttk_buttons=True, key='Add Creature 2')],
-    [sg.Button('Add Selected to Enemy 2', size=(22,1), use_ttk_buttons=True, key='Add Creature 3')],
-    [sg.Button('Add Selected to Enemy 3', size=(22,1), use_ttk_buttons=True, key='Add Creature 4')],
     [sg.Text('Party Only'),sg.Checkbox('', default=False, key='_PARTYONLYSIMULATOR_', visible=True, enable_events=True)],
+    [sg.Text('Hint: Select a creature from\nthe available list and press +\nto add to the chosen group.')],
 ]
 
 layout_simulator_team1 = [
     [sg.Text("Party")],
-    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True)],
-    [sg.Button('Remove Selected from Party', use_ttk_buttons=True, key='Remove Creature 1')],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True, visible=False)],
+    [sg.Table(values=[], headings=['Name','LVL/CR','AI','HP','AC','Iniciative'],auto_size_columns=False, col_widths=[30,6,8,4,4,10],num_rows=5, key='_TEAM1TABLE_', justification='c', selected_row_colors=('white','#3399FF'), enable_events=True)],
+    [sg.Button('+', use_ttk_buttons=True, key='Add Creature 1', button_color=('green', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1)), 
+    sg.Button('-', use_ttk_buttons=True, key='Remove Creature 1', button_color=('red', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1)),
+    sg.Button('Clear', use_ttk_buttons=True, key='Clear Team 1', font=('Any', 12))],
 ]
 
 layout_simulator_team2 = [
     [sg.Text("Enemy 1")],
-    [sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True)],
-    [sg.Button('Remove Selected from Enemy 1', use_ttk_buttons=True, key='Remove Creature 2')],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True, visible=False)],
+    [sg.Table(values=[], headings=['Name','LVL/CR','AI','HP','AC','Iniciative'],auto_size_columns=False, col_widths=[30,6,8,4,4,10],num_rows=5, key='_TEAM2TABLE_', justification='c', selected_row_colors=('white','#3399FF'), enable_events=True)],
+    [sg.Button('+', use_ttk_buttons=True, key='Add Creature 2', button_color=('green', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1)), 
+    sg.Button('-', use_ttk_buttons=True, key='Remove Creature 2', button_color=('red', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1)),
+    sg.Button('Clear', use_ttk_buttons=True, key='Clear Team 2', font=('Any', 12))],
 ]
 
 layout_simulator_team3 = [
     [sg.Text("Enemy 2")],
-    [sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True)],
-    [sg.Button('Remove Selected from Enemy 2', use_ttk_buttons=True, key='Remove Creature 3')],
-    [sg.Text('Rest?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST1_', default_value='No Rest')],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True, visible=False)],
+    [sg.Table(values=[], headings=['Name','LVL/CR','AI','HP','AC','Iniciative'],auto_size_columns=False, col_widths=[30,6,8,4,4,10],num_rows=5, key='_TEAM3TABLE_', justification='c', selected_row_colors=('white','#3399FF'), enable_events=True)],
+    [sg.Button('+', use_ttk_buttons=True, key='Add Creature 3', button_color=('green', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1), disabled=True), 
+    sg.Button('-', use_ttk_buttons=True, key='Remove Creature 3', button_color=('red', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1), disabled=True),
+    sg.Button('Clear', use_ttk_buttons=True, key='Clear Team 3', font=('Any', 12)),
+    sg.Text('Rest?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST1_', default_value='No Rest', disabled=True)],
 ]
 
 layout_simulator_team4 = [
     [sg.Text("Enemy 3")],
-    [sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
-    [sg.Button('Remove Selected from Enemy 3', use_ttk_buttons=True, key='Remove Creature 4')],
-    [sg.Text('Rest?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST2_', default_value='No Rest')],
+    [sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True, visible=False)],
+    [sg.Table(values=[], headings=['Name','LVL/CR','AI','HP','AC','Iniciative'],auto_size_columns=False, col_widths=[30,6,8,4,4,10],num_rows=5, key='_TEAM4TABLE_', justification='c', selected_row_colors=('white','#3399FF'), enable_events=True)],
+    [sg.Button('+', use_ttk_buttons=True, key='Add Creature 4', button_color=('green', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1), disabled=True), 
+    sg.Button('-', use_ttk_buttons=True, key='Remove Creature 4', button_color=('red', sg.theme_button_color_background()), font=('Any', 12, 'bold'), size=(2,1), disabled=True),
+    sg.Button('Clear', use_ttk_buttons=True, key='Clear Team 4', font=('Any', 12)),
+    sg.Text('Rest?'),sg.DropDown(['Immediate','No Rest','Short Rest'], key='_REST2_', default_value='No Rest', disabled=True)],
 ]
 
-layout_simulator_main = [
+layout_simulator_teams_column = [
+    [sg.Column(layout_simulator_team1)],
+    [sg.Column(layout_simulator_team2)],
+    [sg.Column(layout_simulator_team3, key='_TEAM3COLUMN_', visible=True)],
+    [sg.Column(layout_simulator_team4, key='_TEAM4COLUMN_', visible=True)],
+]
+
+layout_simulator_configs = [
     [sg.Text('Amount of battles in a row: '),sg.DropDown(['One Battle','Two Battles','Three Battles'], key='_BATTLEAMOUNT_', enable_events=True, default_value='One Battle')],
-    sg.vtop([sg.Column(layout_simulator_team1, element_justification='c'), sg.Column(layout_simulator_team2, element_justification='c'), sg.Column(layout_simulator_team3, element_justification='c', visible=False, key='_TEAM3COLUMN_'), sg.Column(layout_simulator_team4, element_justification='c', visible=False, key='_TEAM4COLUMN_')]),
-#   [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
-#   [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
-#   [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
     [sg.Text('Number of Simulations:'), sg.Input(size=(5,1), key='_ITERATIONS_', enable_events=True, default_text='1000')],
     [sg.Text('Complete Logs?'),sg.Checkbox('', default=False, key='_FULLLOGS_', visible=True)],
-    [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate')],
+    [sg.Button('Simulate', use_ttk_buttons=True, key='Simulate', font=('Any',20,'bold'))],
     [sg.Text("Results:", size=(8,1)), sg.Text('', key='_SIMULATIONRESULTS_')],
     [sg.Button('Open Detailed Results', use_ttk_buttons=True, key='Results_Button', visible=False)],
     [sg.Button('Open Complete Logs', use_ttk_buttons=True, key='Logs_Button', visible=False)],
 ]
 
 layout_simulator = [
-    [sg.vtop(sg.Column(layout_simulator_main)), sg.Push(), sg.VerticalSeparator(), sg.Column(layout_creatures_simulator_sidebar, element_justification='c')],
-]
+    [sg.vtop(sg.Column(layout_creatures_simulator_sidebar, element_justification='c')), sg.vtop(sg.Column(layout_simulator_teams_column)), sg.vtop(sg.Column(layout_simulator_configs))],
+#   sg.vtop([sg.Column(layout_simulator_team1, element_justification='c'), sg.Column(layout_simulator_team2, element_justification='c'), sg.Column(layout_simulator_team3, element_justification='c', visible=False, key='_TEAM3COLUMN_'), sg.Column(layout_simulator_team4, element_justification='c', visible=False, key='_TEAM4COLUMN_')]),
+#   [sg.Listbox(values=[], size=(20, 20), key='_TEAM1_', enable_events=True), sg.Listbox(values=[], size=(20, 20), key='_TEAM2_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST1_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM3_', enable_events=True),sg.DropDown(['Instant','No Rest','Short Rest'], key='_REST2_'), sg.Listbox(values=[], size=(20, 20), key='_TEAM4_', enable_events=True)],
+#   [sg.Button('Add Creature to Team 1', use_ttk_buttons=True, key='Add Creature 1'), sg.Button('Add Creature to Team 2', use_ttk_buttons=True, key='Add Creature 2'), sg.Button('Add Creature to Team 3', use_ttk_buttons=True, key='Add Creature 3'), sg.Button('Add Creature to Team 4', use_ttk_buttons=True, key='Add Creature 4')],
+#   [sg.Button('Remove Creature from Team 1', use_ttk_buttons=True, key='Remove Creature 1'), sg.Button('Remove Creature from Team 2', use_ttk_buttons=True, key='Remove Creature 2'), sg.Button('Remove Creature from Team 3', use_ttk_buttons=True, key='Remove Creature 3'), sg.Button('Remove Creature from Team 4', use_ttk_buttons=True, key='Remove Creature 4')],
+    ]
+
+#layout_simulator_old = [
+#    [sg.vtop(sg.Column(layout_simulator_main)), sg.Push(), sg.VerticalSeparator(), sg.Column(layout_creatures_simulator_sidebar, element_justification='c')],
+#]
 
 # Create the main window layout with the menu
 #layout_main = [
@@ -356,15 +376,38 @@ simulation_data = {
     'Repetitions': 1000
 }
 
-def events(event, values,window):
+
+def table_update(table_number, window):
+    table_rows = []
+    for creature in window[f'_TEAM{table_number}_'].get_list_values():
+        table_rows.append([creature['Name'],creature['LVL/CR'],creature['AI'],creature['HP'],creature['AC'],creature['Iniciative']])
+    window[f'_TEAM{table_number}TABLE_'].update(table_rows)
+    
+    
+
+def events(event, values,window,main_window,secondary_window):
+    global selected_row_1
+    global selected_row_2
+    global selected_row_3
+    global selected_row_4
     
     #Simulator Events
+    if event == '_TEAM1TABLE_':
+        selected_row_1 = values['_TEAM1TABLE_'][0]
+    if event == '_TEAM2TABLE_':
+        selected_row_2 = values['_TEAM2TABLE_'][0]
+    if event == '_TEAM3TABLE_':
+        selected_row_3 = values['_TEAM3TABLE_'][0]
+    if event == '_TEAM4TABLE_':
+        selected_row_4 = values['_TEAM4TABLE_'][0]
+    
     if event == 'Add Creature 1' and values['_CREATURESSIMULATOR_']:
         selected_creature = values['_CREATURESSIMULATOR_'][0]
         filename = os.path.join(os.getcwd(), 'Creatures', selected_creature + '.json')
         creature_data = load(filename)
         simulation_data['Team1'].append(creature_data)
         window['_TEAM1_'].update(simulation_data['Team1'])
+        table_update('1',window)
         #filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
         #if filenames:
         #    filename_list = filenames.split(";")
@@ -378,6 +421,7 @@ def events(event, values,window):
         creature_data = load(filename)
         simulation_data['Team2'].append(creature_data)
         window['_TEAM2_'].update(simulation_data['Team2'])
+        table_update('2',window)
     
         #filenames = sg.popup_get_file('Load Creature Data', file_types=(('JSON Files', '*.json'),), multiple_files=True)
         #if filenames:
@@ -392,65 +436,117 @@ def events(event, values,window):
         creature_data = load(filename)
         simulation_data['Team3'].append(creature_data)
         window['_TEAM3_'].update(simulation_data['Team3'])
+        table_update('3',window)
     elif event == 'Add Creature 4' and values['_CREATURESSIMULATOR_']:
         selected_creature = values['_CREATURESSIMULATOR_'][0]
         filename = os.path.join(os.getcwd(), 'Creatures', selected_creature + '.json')
         creature_data = load(filename)
         simulation_data['Team4'].append(creature_data)
         window['_TEAM4_'].update(simulation_data['Team4'])
+        table_update('4',window)
             
-    elif event == 'Remove Creature 1' and values['_TEAM1_']:
-        selected_creature = values['_TEAM1_'][0]
+    elif event == 'Remove Creature 1' and values['_TEAM1TABLE_']:
+        selected_creature = window['_TEAM1_'].get_list_values()[selected_row_1]
         team_data = window['_TEAM1_'].get_list_values()
         team_data.remove(selected_creature)
         window['_TEAM1_'].update(team_data)
         simulation_data['Team1'] = window['_TEAM1_'].get_list_values()
+        table_update('1',window)
     
-    elif event == 'Remove Creature 2' and values['_TEAM2_']:
-        selected_creature = values['_TEAM2_'][0]
+    elif event == 'Remove Creature 2' and values['_TEAM2TABLE_']:
+        selected_creature = window['_TEAM2_'].get_list_values()[selected_row_2]
         team_data = window['_TEAM2_'].get_list_values()
         team_data.remove(selected_creature)
         window['_TEAM2_'].update(team_data)  
-        simulation_data['Team2'] = window['_TEAM2_'].get_list_values()    
+        simulation_data['Team2'] = window['_TEAM2_'].get_list_values()  
+        table_update('2',window)  
     
-    elif event == 'Remove Creature 3' and values['_TEAM3_']:
-        selected_creature = values['_TEAM3_'][0]
+    elif event == 'Remove Creature 3' and values['_TEAM3TABLE_']:
+        selected_creature = window['_TEAM3_'].get_list_values()[selected_row_3]
         team_data = window['_TEAM3_'].get_list_values()
         team_data.remove(selected_creature)
         window['_TEAM3_'].update(team_data)  
         simulation_data['Team3'] = window['_TEAM3_'].get_list_values()  
+        table_update('3',window)
     
-    elif event == 'Remove Creature 4' and values['_TEAM4_']:
-        selected_creature = values['_TEAM4_'][0]
+    elif event == 'Remove Creature 4' and values['_TEAM4TABLE_']:
+        selected_creature = window['_TEAM4_'].get_list_values()[selected_row_4]
         team_data = window['_TEAM4_'].get_list_values()
         team_data.remove(selected_creature)
         window['_TEAM4_'].update(team_data)  
         simulation_data['Team4'] = window['_TEAM4_'].get_list_values()    
+        table_update('4',window)
             
+    elif event == 'Clear Team 1':
+        simulation_data['Team1'] = []
+        window['_TEAM1_'].update([])
+        window['_TEAM1TABLE_'].update([[]])
+            
+    elif event == 'Clear Team 2':
+        simulation_data['Team2'] = []
+        window['_TEAM2_'].update([])
+        window['_TEAM2TABLE_'].update([[]])
+            
+    elif event == 'Clear Team 3':
+        simulation_data['Team3'] = []
+        window['_TEAM3_'].update([])
+        window['_TEAM3TABLE_'].update([[]])
+            
+    elif event == 'Clear Team 4':
+        simulation_data['Team4'] = []
+        window['_TEAM4_'].update([])
+        window['_TEAM4TABLE_'].update([[]])
+    
+    
     elif event == '_BATTLEAMOUNT_':
         if values['_BATTLEAMOUNT_'] == 'One Battle':
             window['_TEAM3COLUMN_'].update(visible=False)
             window['_TEAM4COLUMN_'].update(visible=False)
+            window['Add Creature 3'].update(disabled=True)
+            window['Remove Creature 3'].update(disabled=True)
+            window['Add Creature 4'].update(disabled=True)
+            window['Remove Creature 4'].update(disabled=True)
+            window['_REST1_'].update(disabled=True)
+            window['_REST2_'].update(disabled=True)
         if values['_BATTLEAMOUNT_'] == 'Two Battles':
             window['_TEAM3COLUMN_'].update(visible=True)
             window['_TEAM4COLUMN_'].update(visible=False)
+            window['Add Creature 3'].update(disabled=False)
+            window['Remove Creature 3'].update(disabled=False)
+            window['Add Creature 4'].update(disabled=True)
+            window['Remove Creature 4'].update(disabled=True)
+            window['_REST1_'].update(disabled=False)
+            window['_REST2_'].update(disabled=True)
         if values['_BATTLEAMOUNT_'] == 'Three Battles':
             window['_TEAM3COLUMN_'].update(visible=True)
             window['_TEAM4COLUMN_'].update(visible=True)
+            window['Add Creature 3'].update(disabled=False)
+            window['Remove Creature 3'].update(disabled=False)
+            window['Add Creature 4'].update(disabled=False)
+            window['Remove Creature 4'].update(disabled=False)
+            window['_REST1_'].update(disabled=False)
+            window['_REST2_'].update(disabled=False)
     
-    elif event == '_PARTYONLY_':
+    elif event == '_PARTYONLYSIMULATOR_':
         window.Element('_CREATURESSIMULATOR_').Update(get_creatures_list(values['_PARTYONLYSIMULATOR_']))
     
     elif event == 'Simulate':
-        if simulation_data['Team1'] and simulation_data['Team2']:
+        if (simulation_data['Team1'] and simulation_data['Team2']) and (values['_BATTLEAMOUNT_'] == 'One Battle' or (simulation_data['Team3'] and values['_BATTLEAMOUNT_'] == 'Two Battles') or (simulation_data['Team3'] and simulation_data['Team4'] and values['_BATTLEAMOUNT_'] == 'Three Battles')):
             iterations = int(values['_ITERATIONS_']) if values['_ITERATIONS_'] else 1
             full_logs = values['_FULLLOGS_']
-            winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], simulation_data['Team3'], simulation_data['Team4'], values['_REST1_'],values['_REST2_'], iterations, full_logs)
+            team3 = []
+            team4 = []
+            if values['_BATTLEAMOUNT_'] == 'Two Battles':
+                team3 = simulation_data['Team3']
+            elif values['_BATTLEAMOUNT_'] == 'Three Battles':
+                team3 = simulation_data['Team3']
+                team4 = simulation_data['Team4']
+            winratetext = run_simulation(simulation_data['Team1'], simulation_data['Team2'], team3, team4, values['_REST1_'],values['_REST2_'], iterations, full_logs)
             window['_SIMULATIONRESULTS_'].update(winratetext)
             window['Results_Button'].update(visible=True)
             window['Logs_Button'].update(visible=full_logs)
         else:
-            window['_SIMULATIONRESULTS_'].update('Please input at least a team in "Party" and "Enemy 1"')
+            window['_SIMULATIONRESULTS_'].update('Each participating team must\nhave at least one creature.')
             window['Results_Button'].update(visible=False)
             window['Logs_Button'].update(visible=False)
         
@@ -463,10 +559,10 @@ def events(event, values,window):
     elif event == '_CREATURESSIMULATOR_':
         pass
         
-    elif values['_INPUTCREATURESIMULATOR_'] != '':
+    elif event == '_INPUTCREATURESIMULATOR_' and values['_INPUTCREATURESIMULATOR_'] != '':
         search = values['_INPUTCREATURESIMULATOR_']
         new_values = [x for x in get_creatures_list(values['_PARTYONLYSIMULATOR_']) if search.lower() in x.lower()]
         window.Element('_CREATURESSIMULATOR_').Update(new_values)
         
-    elif values['_INPUTCREATURESIMULATOR_'] == '':
+    elif event == '_INPUTCREATURESIMULATOR_' and values['_INPUTCREATURESIMULATOR_'] == '':
         window.Element('_CREATURESSIMULATOR_').Update(get_creatures_list(values['_PARTYONLYSIMULATOR_']))

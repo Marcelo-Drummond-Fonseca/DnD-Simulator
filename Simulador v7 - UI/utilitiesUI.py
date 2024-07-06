@@ -46,7 +46,20 @@ def get_creatures_list(party_only = False):
         if file.endswith('.json'):
             creatures.append(file[:-5])  # Remove .json extension
     return creatures
-    
+
+def get_creature_actions_list(creature_data, excepted_action = None):
+    creature_actions_list = []
+    if excepted_action is not None:
+        creature_actions_list.append('')
+        for action in creature_data['Actions']:
+            if action['Name'] != excepted_action['Name']:
+                creature_actions_list.append(action['Name'])
+    else:
+        for action in creature_data['Actions']:
+            creature_actions_list.append(action['Name'])
+    return creature_actions_list
+        
+
 #Function to get the names of all conditions in the "Conditions" folder.        
 def get_conditions_list():
     conditions_folder = os.path.join(os.getcwd(), 'Conditions')
@@ -70,3 +83,12 @@ def get_actions_list():
         if file.endswith('.json'):
             actions.append(file[:-5])  # Remove .json extension
     return actions
+    
+def get_resources_list():
+    resources_folder = os.path.join(os.getcwd(), 'Resources')
+    if not os.path.exists(resources_folder):
+        os.makedirs(resources_folder)
+        
+    resources = load(os.path.join(resources_folder, 'Resources.json'))
+    return resources
+    

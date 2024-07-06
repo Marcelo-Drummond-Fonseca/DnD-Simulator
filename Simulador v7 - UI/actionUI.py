@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 import os
-from utilitiesUI import get_conditions_list, get_actions_list, save, load, damage_types
+from utilitiesUI import get_conditions_list, get_actions_list, get_resources_list, save, load, damage_types
 import copy
 
 #ACTIONS
@@ -17,7 +17,7 @@ layout_action_statistics = [
 
 layout_action_costs = [
     [sg.VPush()],
-    [sg.Text("Resource Name", size=(16, 1)), sg.Input(size=(20, 1), key='_ACTIONRESOURCENAME_', justification='left', enable_events=True),
+    [sg.Text("Resource Name", size=(16, 1)), sg.DropDown(get_resources_list(), size=(20, 1), key='_ACTIONRESOURCENAME_', enable_events=True),
     sg.Text("Resource Cost", size=(16, 1)), sg.Input(size=(5, 1), key='_ACTIONRESOURCECOST_', justification='left', enable_events=True)],
     [sg.Button('Add Cost', use_ttk_buttons=True),sg.Button('Delete Cost', use_ttk_buttons=True)],
     [sg.Listbox(values=[], size=(50, 5), key='_ResourceCosts_')],
@@ -175,7 +175,7 @@ def update_action_data(values,window):
 
 
 #Action Events
-def events(event,values,window):
+def events(event,values,window,main_window,secondary_window):
     global action_data
     if event == '_ACTIONS_' and len(values['_ACTIONS_']):
         selected_action = values['_ACTIONS_']
@@ -315,7 +315,7 @@ def events(event,values,window):
     elif event == '_ACTIONCONDITIONSSIDEBAR_':
         pass
     
-    elif values['_INPUTACTION_'] != '' or values['_INPUTACTIONCONDITION_'] != '':
+    elif (event == '_INPUTACTION_' and values['_INPUTACTION_'] != '') or (event == '_INPUTACTIONCONDITION_' and values['_INPUTACTIONCONDITION_'] != ''):
         search = values['_INPUTACTION_']
         new_values = [x for x in get_actions_list() if search.lower() in x.lower()]
         window.Element('_ACTIONS_').Update(new_values)
@@ -323,6 +323,8 @@ def events(event,values,window):
         new_values = [x for x in get_conditions_list() if search.lower() in x.lower()]
         window.Element('_ACTIONCONDITIONSSIDEBAR_').Update(new_values)
         
-    else:
+    elif (event == '_INPUTACTION_' and values['_INPUTACTION_'] == ''):
         window.Element('_ACTIONS_').Update(get_actions_list())
+        
+    elif (event == '_INPUTACTIONCONDITION_' and values['_INPUTACTIONCONDITION_'] != ''):    
         window.Element('_ACTIONCONDITIONSSIDEBAR_').Update(get_conditions_list())

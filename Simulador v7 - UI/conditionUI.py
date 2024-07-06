@@ -210,7 +210,7 @@ def update_condition_data(values,window):
 
 
 #Condition Events
-def events(event,values,window):
+def events(event,values,window,main_window,secondary_window):
     global condition_data
 
     if event == '_CONDITIONS_' and len(values['_CONDITIONS_']):
@@ -274,10 +274,10 @@ def events(event,values,window):
             update_condition(condition_data,window)
             sg.popup(f'Condition data loaded from {filename}', title='Load Successful')
     
-    elif values['_INPUTCONDITION_'] != '':
+    elif event == '_INPUTCONDITION_' and values['_INPUTCONDITION_'] != '':
         search = values['_INPUTCONDITION_']
         new_values = [x for x in get_conditions_list() if search.lower() in x.lower()]
         window.Element('_CONDITIONS_').Update(new_values)
         
-    else:
+    elif event == '_INPUTCONDITION_' and values['_INPUTCONDITION_'] == '':
         window.Element('_CONDITIONS_').Update(get_conditions_list())
