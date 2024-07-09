@@ -306,7 +306,9 @@ def update_creature(creature_data,window):
     window['_ResourcesListNames_'].update([f'{resource["Name"]} ({resource["Number"]} per {resource["Type"]})' for resource in creature_data['Resources']])
     window['_ActionList_'].update(creature_data['Actions'])
     window['_ActionListNames_'].update([f'{action["Name"]} ({action["Action Speed"]})' for action in creature_data['Actions']])
-    if 'Conditions' in creature_data: window['_CreatureConditionList_'].update(creature_data['Conditions'])
+    if 'Conditions' in creature_data: 
+        window['_CreatureConditionList_'].update(creature_data['Conditions'])
+        window['_CreatureConditionListNames_'].update(condition['Name'] for condition in creature_data['Conditions'])
     else: creature_data['Conditions'] = []
     window['_ComboList_'].update(creature_data['Combos'])
     window['_ResistanceList_'].update(creature_data['Resistances'])
