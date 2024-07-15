@@ -1,0 +1,328 @@
+LEVEL	EASY	MEDIUM	HARD	DEADLY
+1		100		200		300		400
+3		300		600		900		1600
+5		1000	2000	3000	4400
+9		2200	4400	6400	9600
+11		3200	6400	9600	14400
+#13		4400	8800	13600	20400
+#17		8000	15600	23600	35200
+#20		11200	22800	34000	50800
+
+1 Easy: Crocodile x1
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 1.193 rounds
+mortes (totais): {'Crocodile': 1000, 'Tiefling Sorcerer lvl 1': 62, 'Half Orc Barbarian lvl 1': 8, 'Half Orc Monk lvl 1': 1}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.002339181286549752
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9506666666666659
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 1.4469027519226074
+
+1 Medium: Imp
+
+Party winrate: 99.9%
+Enemy 1 winrate: 0.1%
+Duração média: 1.521 rounds
+mortes (totais): {'Imp': 999, 'Dragonborn Paladin lvl 1': 279, 'Half Orc Monk lvl 1': 49, 'Tiefling Sorcerer lvl 1': 15, 'Half Orc Barbarian lvl 1': 1}
+Incerteza média: 0.00915952380952381
+Permanencia média do time 1: 0.9848880952380952
+Permanencia média do time 2: 0.004166666666666666
+Vantagem Decisiva para time 1: 0.2333333333333334
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9043043043043066
+Porcentagem de HP restante médio para time 2: 0.3
+Tempo de execução: 1.845999002456665
+
+
+1 Hard: Orc + Hobgoblin
+
+Party winrate: 99.9%
+Enemy 1 winrate: 0.1%
+Duração média: 1.485 rounds
+mortes (totais): {'Orc': 1000, 'Hobgoblin': 999, 'Half Orc Barbarian lvl 1': 136, 'Half Orc Monk lvl 1': 198, 'Dragonborn Paladin lvl 1': 38, 'Tiefling Sorcerer lvl 1': 14}
+Incerteza média: 0.0026666666666666666
+Permanencia média do time 1: 0.9958333333333333
+Permanencia média do time 2: 0.0015
+Vantagem Decisiva para time 1: 0.16666666666666663
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8450228005783568
+Porcentagem de HP restante médio para time 2: 0.038461538461538464
+Tempo de execução: 1.8959996700286865
+
+1 Deadly: Plesiosaurus
+
+Party winrate: 86.1%
+Enemy 1 winrate: 13.9%
+Duração média: 3.747 rounds
+mortes (totais): {'Dragonborn Paladin lvl 1': 714, 'Plesiosaurus': 861, 'Half Orc Barbarian lvl 1': 309, 'Half Orc Monk lvl 1': 169, 'Tiefling Sorcerer lvl 1': 139}
+Incerteza média: 0.06083373015873019
+Permanencia média do time 1: 0.8727615079365073
+Permanencia média do time 2: 0.05551666666666666
+Vantagem Decisiva para time 1: 0.711437908496732
+Vantagem Decisiva para time 2: -0.02058823529411763
+Porcentagem de HP restante médio para time 1: 0.6808104271518891
+Porcentagem de HP restante médio para time 2: 0.24693186627168845
+Tempo de execução: 3.4004323482513428
+
+
+3 Easy: Giant Bat x2 + Giant Crab x2
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 2.259 rounds
+mortes (totais): {'Giant Bat 1': 1000, 'Giant Bat 2': 1000, 'Giant Crab 1': 1000, 'Giant Crab 2': 1000, 'Half Orc Monk lvl 3': 33}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.05540720961281709
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8820093457943923
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 5.464517116546631
+
+3 Medium: Bugbear x2
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 2.013 rounds
+mortes (totais): {'Bugbear 1': 1000, 'Bugbear 2': 1000, 'Half Orc Monk lvl 3': 85, 'Tiefling Sorcerer lvl 3': 2, 'Half Orc Barbarian lvl 3': 6}
+Incerteza média: 0.0019999999999999996
+Permanencia média do time 1: 0.9975
+Permanencia média do time 2: 0.0005
+Vantagem Decisiva para time 1: 0.024922118380062308
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8766728971962595
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 4.047261476516724
+
+
+3 Hard: Tiger x1 + Giant Wolf Spider x4
+
+Party winrate: 99.4%
+Enemy 1 winrate: 0.6%
+Duração média: 2.575 rounds
+mortes (totais): {'Tiger': 1000, 'Giant Wolf Spider 1': 1000, 'Giant Wolf Spider 2': 998, 'Giant Wolf Spider 3': 996, 'Giant Wolf Spider 4': 994, 'Dragonborn Paladin lvl 3': 119, 'Half Orc Monk lvl 3': 52, 'Half Orc Barbarian lvl 3': 93, 'Tiefling Sorcerer lvl 3': 6}
+Incerteza média: 0.016
+Permanencia média do time 1: 0.9749499999999997
+Permanencia média do time 2: 0.0062
+Vantagem Decisiva para time 1: 0.1479173877927772
+Vantagem Decisiva para time 2: -0.0026537440867658926
+Porcentagem de HP restante médio para time 1: 0.7543861298632906
+Porcentagem de HP restante médio para time 2: 0.1646090534979424
+Tempo de execução: 6.969278812408447
+
+3 Deadly: Giant Spider x2 + Hippogriff x2
+
+Party winrate: 99.4%
+Enemy 1 winrate: 0.6%
+Duração média: 2.318 rounds
+mortes (totais): {'Hippogriff 1': 1000, 'Hippogriff 2': 1000, 'Giant Spider 1': 997, 'Dragonborn Paladin lvl 3': 123, 'Giant Spider 2': 994, 'Half Orc Barbarian lvl 3': 74, 'Half Orc Monk lvl 3': 45, 'Tiefling Sorcerer lvl 3': 6}
+Incerteza média: 0.014816666666666672
+Permanencia média do time 1: 0.975233333333333
+Permanencia média do time 2: 0.008400000000000001
+Vantagem Decisiva para time 1: 0.14615784008307375
+Vantagem Decisiva para time 2: -0.12902388369678092
+Porcentagem de HP restante médio para time 1: 0.7897572349987775
+Porcentagem de HP restante médio para time 2: 0.22453703703703706
+Tempo de execução: 5.5029990673065186
+
+
+5 Easy: Ettin x1
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 1.287 rounds
+mortes (totais): {'Ettin': 1000}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.32170385395537526
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9568965517241369
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 3.3349974155426025
+
+5 Medium: Elephant x1 + Tiger x1
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 1.737 rounds
+mortes (totais): {'Half Orc Barbarian lvl 5': 24, 'Elephant': 1000, 'Tiger': 1000, 'Dragonborn Paladin lvl 5': 5}
+Incerteza média: 0.0013333333333333333
+Permanencia média do time 1: 0.9986666666666666
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.035703387244430895
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8846149425287345
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 4.782998323440552
+
+5 Hard: Giant Ape x1
+
+Party winrate: 99.9%
+Enemy 1 winrate: 0.1%
+Duração média: 2.135 rounds
+mortes (totais): {'Giant Ape': 999, 'Dragonborn Paladin lvl 5': 145, 'Half Orc Barbarian lvl 5': 39, 'Half Orc Monk lvl 5': 2, 'Tiefling Sorcerer lvl 5': 1}
+Incerteza média: 0.002916666666666667
+Permanencia média do time 1: 0.9970833333333332
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.3108939160992752
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8599231415323358
+Porcentagem de HP restante médio para time 2: 0.03821656050955414
+Tempo de execução: 5.289795398712158
+
+5 Deadly: Wyvern x1 + Minotaur x1:
+
+Party winrate: 99.7%
+Enemy 1 winrate: 0.3%
+Duração média: 2.43 rounds
+mortes (totais): {'Minotaur': 999, 'Wyvern': 997, 'Dragonborn Paladin lvl 5': 219, 'Half Orc Barbarian lvl 5': 10, 'Tiefling Sorcerer lvl 5': 14, 'Half Orc Monk lvl 5': 3}
+Incerteza média: 0.006599999999999999
+Permanencia média do time 1: 0.9917999999999997
+Permanencia média do time 2: 0.0016
+Vantagem Decisiva para time 1: 0.196143863552095
+Vantagem Decisiva para time 2: -0.06748238783833889
+Porcentagem de HP restante médio para time 1: 0.8187608803421758
+Porcentagem de HP restante médio para time 2: 0.07168458781362007
+Tempo de execução: 7.299842357635498
+
+9 Easy: Chimera
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 1.381 rounds
+mortes (totais): {'Chimera': 1000}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.1988774186269533
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9165273311897097
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 3.7885711193084717
+
+9 Medium: Veteran x2 + Bugbear x4
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 2.193 rounds
+mortes (totais): {'Bugbear 2': 1000, 'Bugbear 1': 1000, 'Veteran 1': 1000, 'Veteran 2': 1000, 'Bugbear 3': 1000, 'Bugbear 4': 1000, 'Tiefling Sorcerer lvl 9': 8}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.20726630684428116
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8689163987138262
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 7.7412109375
+
+9 Hard: Ankylosaur x2 + Rhinoceros x4
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 2.623 rounds
+mortes (totais): {'Rhinoceros 1': 1000, 'Rhinoceros 2': 1000, 'Rhinoceros 3': 1000, 'Rhinoceros 4': 1000, 'Ankylosaurus 1': 1000, 'Ankylosaurus 2': 1000, 'Half Orc Barbarian lvl 9': 20, 'Tiefling Sorcerer lvl 9': 6, 'Dragonborn Paladin lvl 9': 14}
+Incerteza média: 0.002916666666666667
+Permanencia média do time 1: 0.997083333333333
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.05799991859660547
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.7855627009646293
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 9.771427392959595
+
+9 Deadly: Stone Giant x1 + Berserker x4
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 3.07 rounds
+mortes (totais): {'Berserker 1': 1000, 'Berserker 2': 1000, 'Berserker 3': 1000, 'Berserker 4': 1000, 'Stone Giant': 1000, 'Dragonborn Paladin lvl 9': 26}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.23717498816654964
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.8017041800643088
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 11.765174150466919
+
+11 Easy: Elephant x2
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 1.56 rounds
+mortes (totais): {'Elephant 1': 1000, 'Elephant 2': 1000, 'Dragonborn Paladin lvl 11': 4}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.2718832891246684
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.9302705570291696
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 4.35099983215332
+
+
+11 Medium: Giant Crocodile x1 + Manticore x2
+
+Party winrate: 100.0%
+Enemy 1 winrate: 0.0%
+Duração média: 2.113 rounds
+mortes (totais): {'Giant Crocodile': 1000, 'Manticore 1': 1000, 'Manticore 2': 1000, 'Tiefling Sorcerer lvl 11': 7, 'Dragonborn Paladin lvl 11': 2}
+Incerteza média: 0.0
+Permanencia média do time 1: 1.0
+Permanencia média do time 2: 0.0
+Vantagem Decisiva para time 1: 0.24387579965673278
+Vantagem Decisiva para time 2: N/A
+Porcentagem de HP restante médio para time 1: 0.889405835543755
+Porcentagem de HP restante médio para time 2: 0
+Tempo de execução: 7.0757997035980225
+
+
+11 Hard: Storm Giant
+
+Party winrate: 99.9%
+Enemy 1 winrate: 0.1%
+Duração média: 2.247 rounds
+mortes (totais): {'Storm Giant': 999, 'Dragonborn Paladin lvl 11': 259, 'Half Orc Barbarian lvl 11': 7, 'Tiefling Sorcerer lvl 11': 1, 'Half Orc Monk lvl 11': 1}
+Incerteza média: 0.00820238095238095
+Permanencia média do time 1: 0.9865119047619045
+Permanencia média do time 2: 0.005
+Vantagem Decisiva para time 1: 0.0034367431668781423
+Vantagem Decisiva para time 2: -0.12521047168723332
+Porcentagem de HP restante médio para time 1: 0.719977271701412
+Porcentagem de HP restante médio para time 2: 0.1782608695652174
+Tempo de execução: 5.854321718215942
+
+
+11 Deadly: Young Bronze Dragon + Fire Elemental x2
+
+Party winrate: 99.0%
+Enemy 1 winrate: 1.0%
+Duração média: 3.143 rounds
+mortes (totais): {'Fire Elemental 1': 1000, 'Fire Elemental 2': 993, 'Young Bronze Dragon': 991, 'Dragonborn Paladin lvl 11': 362, 'Half Orc Barbarian lvl 11': 115, 'Tiefling Sorcerer lvl 11': 21, 'Half Orc Monk lvl 11': 13}
+Incerteza média: 0.025752380952380933
+Permanencia média do time 1: 0.9681309523809518
+Permanencia média do time 2: 0.004683333333333334
+Vantagem Decisiva para time 1: 0.39018874288956007
+Vantagem Decisiva para time 2: -0.0808865242789899
+Porcentagem de HP restante médio para time 1: 0.5825791067170385
+Porcentagem de HP restante médio para time 2: 0.07890173410404624
+Tempo de execução: 11.138805389404297
+
+
+
+
+
+
+
+Player Characters:
+Red Dragonborn Paladin (Devotion)
+Half-Orc Barbarian (Berserker)
+Half-Orc Monk (Open Hand)
+Tiefling Sorcerer (Red Dragon)

@@ -256,7 +256,9 @@ class Creature:
                     else:
                         necessary_resources[action.resource_cost[0]] = action.resource_cost[1]
             for resource_type, resource_amount in necessary_resources.items():
-                if self.current_resources[resource_type] < resource_amount:
+                if resource_type not in self.current_resources:
+                    possible = False
+                elif self.current_resources[resource_type] < resource_amount:
                     possible = False
             if possible:
                 possible_actions.append(actions)

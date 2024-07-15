@@ -34,3 +34,4 @@ def events(event,values,window,main_window,secondary_window):
         #creature_data['Combos'] = window['_ComboList_'].get_list_values()
     elif event == 'Save Resource Names':
         save(os.path.join(os.getcwd(), 'Resources/Resources.json'), window['_ResourceNamesList_'].get_list_values())
+        window['_ACTIONRESOURCENAME_'].update(values=get_resources_list())

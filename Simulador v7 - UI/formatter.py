@@ -33,7 +33,8 @@ def format_condition(condition):
         else: advantage = 0
         extra_damage = []
         if condition['Extra Damage Roll'] and condition['Extra Damage Type']:
-            extra_damage = format_roll(condition['Extra Damage Roll']).append(condition['Extra Damage Type'])
+            extra_damage = format_roll(condition['Extra Damage Roll'])
+            extra_damage.append(condition['Extra Damage Type'])
         effectslist.append(Modified_Attack(int(condition['Attack Modifier']), int(condition['Damage Modifier']), advantage, extra_damage = extra_damage, crit_threshold = int(condition['Crits On'])))
     if condition['AC Modifier'] or condition['Defense Advantage'] or condition['Saves Modifier'] or condition['Saves Advantage'] or condition['Resistances'] or condition['Auto Crit'] == "True" or condition['Evasion']:
         if condition['Defense Advantage'] == 'Advantage': advantage = 1
@@ -103,7 +104,7 @@ def format_action(action, creature):
                 is_concentration = action['Concentration']
             else:
                 is_concentration = action['Concentration'] == "True"
-            effect = Apply_Condition(formatted_condition, action['Concentration'] == "True")
+            effect = Apply_Condition(formatted_condition, is_concentration)
     if action['Action Type'] == 'Attack Roll':
         attempt = Attack_Roll(int(action['Attack Bonus']), effect)
     elif action['Action Type'] == 'Saving Throw':

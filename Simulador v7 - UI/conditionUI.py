@@ -263,6 +263,7 @@ def events(event,values,window,main_window,secondary_window):
             save(filename, condition_data)
             sg.popup(f'Condition data saved to {filename}', title='Save Successful')
             window.Element('_CONDITIONS_').Update(get_conditions_list())
+            window['_ACTIONCONDITIONSSIDEBAR_'].update(values=get_conditions_list())
     elif event == 'Load Condition':
         # Show a file open dialog and get the chosen filename
         #filename = sg.popup_get_file('Load Condition Data', file_types=(('JSON Files', '*.json'),))

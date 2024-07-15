@@ -148,7 +148,7 @@ class Modified_Attack(Condition_Effect):
                 if isinstance(action.attempt.effect, act.Damage):
                     action.attempt.effect.add_damage_modifier(-self.damage_bonus)
                     if self.extra_damage:
-                        action.attempt.effect.remove_damage(extra_damage)
+                        action.attempt.effect.remove_damage(self.extra_damage)
 
 class Modified_Defense(Condition_Effect):
 

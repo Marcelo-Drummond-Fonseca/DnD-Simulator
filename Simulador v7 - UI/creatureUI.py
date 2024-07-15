@@ -344,6 +344,7 @@ def update_creature_action(creature_data,action,window):
     window['_CREATUREACTIONFOLLOWUP_'].update(action['Follow Action'], values=get_creature_actions_list(creature_data,action))
     
 def update_creature_action_data(values,window):
+    global opened_creature_action
     opened_creature_action['Name'] = values['_CREATUREACTIONNAME_']
     opened_creature_action['Attack Bonus'] = values['_CREATUREACTIONATTACKBONUS_']
     opened_creature_action['Save DC'] = values['_CREATUREACTIONSAVEDC_']
@@ -422,6 +423,24 @@ def events(event,values,window,main_window,secondary_window):
     
     elif event == '_EDITACTIONS_':
         secondary_window = make_edit_actions(creature_data)
+        if creature_data['Actions']:
+            opened_creature_action = secondary_window['_ActionListTemp_'].get_list_values()[0]
+            update_creature_action(creature_data,opened_creature_action,secondary_window)
+            secondary_window['_CREATUREACTIONATTACKONLY_'].update(visible=opened_creature_action['Action Type'] == 'Attack Roll')
+            secondary_window['_CREATUREACTIONATTACKBONUS_'].update(visible=opened_creature_action['Action Type'] == 'Attack Roll')
+            secondary_window['_CREATUREACTIONSAVEONLYDC_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            secondary_window['_CREATUREACTIONSAVEDC_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            secondary_window['_CREATUREACTIONSAVEONLYTYPE_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            secondary_window['_CREATUREACTIONSAVETYPE_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            secondary_window['_CREATUREACTIONDAMAGEONLYDAMAGE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CREATUREACTIONDAMAGEROLL_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CREATUREACTIONDAMAGEONLYTYPE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CREATUREACTIONDAMAGETYPE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CREATUREACTIONADDDAMAGE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CREATUREACTIONDELETEDAMAGE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CreatureActionDamageList_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            secondary_window['_CREATUREACTIONHEALINGONLY_'].update(visible=opened_creature_action['Effect'] == 'Healing')
+            secondary_window['_CREATUREACTIONHEALINGROLL_'].update(visible=opened_creature_action['Effect'] == 'Healing')
     
     elif event == '_ActionListTempNames_' and len(values['_ActionListTempNames_']):
         selected_action = window['_ActionListTemp_'].get_list_values()[window['_ActionListTempNames_'].get_indexes()[0]]
@@ -443,7 +462,7 @@ def events(event,values,window,main_window,secondary_window):
         window['_CREATUREACTIONHEALINGONLY_'].update(visible=opened_creature_action['Effect'] == 'Healing')
         window['_CREATUREACTIONHEALINGROLL_'].update(visible=opened_creature_action['Effect'] == 'Healing')
         
-    elif event == 'Save Creature Action':
+    elif event == 'Save Creature Action' and window['_ActionListTemp_'].get_list_values():
         update_creature_action_data(values,window)
         creature_data['Actions'] = window['_ActionListTemp_'].get_list_values()
 
@@ -484,6 +503,24 @@ def events(event,values,window,main_window,secondary_window):
             #creature_data['Actions'].append(action_data)
             window['_ActionListTemp_'].update(window['_ActionListTemp_'].get_list_values().append(action_data))
             window['_ActionListTempNames_'].update([f'{action["Name"]} ({action["Action Speed"]})' for action in window['_ActionListTemp_'].get_list_values()])
+            opened_creature_action = window['_ActionListTemp_'].get_list_values()[-1]
+            update_creature_action(creature_data,opened_creature_action,window)
+            window['_CREATUREACTIONATTACKONLY_'].update(visible=opened_creature_action['Action Type'] == 'Attack Roll')
+            window['_CREATUREACTIONATTACKBONUS_'].update(visible=opened_creature_action['Action Type'] == 'Attack Roll')
+            window['_CREATUREACTIONSAVEONLYDC_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            window['_CREATUREACTIONSAVEDC_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            window['_CREATUREACTIONSAVEONLYTYPE_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            window['_CREATUREACTIONSAVETYPE_'].update(visible=opened_creature_action['Action Type'] == 'Saving Throw')
+            window['_CREATUREACTIONDAMAGEONLYDAMAGE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CREATUREACTIONDAMAGEROLL_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CREATUREACTIONDAMAGEONLYTYPE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CREATUREACTIONDAMAGETYPE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CREATUREACTIONADDDAMAGE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CREATUREACTIONDELETEDAMAGE_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CreatureActionDamageList_'].update(visible=opened_creature_action['Effect'] == 'Damage')
+            window['_CREATUREACTIONHEALINGONLY_'].update(visible=opened_creature_action['Effect'] == 'Healing')
+            window['_CREATUREACTIONHEALINGROLL_'].update(visible=opened_creature_action['Effect'] == 'Healing')
+            
     elif event == 'Delete Action' and values['_ActionListTempNames_']:
         selected_action = window['_ActionListTemp_'].get_list_values()[window['_ActionListTempNames_'].get_indexes()[0]]
         action_data = window['_ActionListTemp_'].get_list_values()
@@ -579,6 +616,7 @@ def events(event,values,window,main_window,secondary_window):
             save(filename, creature_data)
             sg.popup(f'Creature data saved to {filename}', title='Save Successful')      
             window.Element('_CREATURES_').Update(get_creatures_list(values['_PARTYONLY_']))
+            window['_CREATURESSIMULATOR_'].update(get_creatures_list(values['_PARTYONLYSIMULATOR_']))
         
         #Party stuff
         filename = os.path.join(os.getcwd(),'Creatures\Party')
@@ -603,17 +641,22 @@ def events(event,values,window,main_window,secondary_window):
     elif event == '_CREATUREACTIONSSIDEBAR_' or event == '_CREATURECONDITIONSSIDEBAR_':
         pass
     
-    elif (event == '_INPUTCREATURE_' and values['_INPUTCREATURE_'] != '') or (event == '_INPUTCREATUREACTION_' and values['_INPUTCREATUREACTION_'] != '') or (event == '_INPUTCREATURECONDITION_' and values['_INPUTCREATURECONDITION_'] != ''):
+    elif (event == '_INPUTCREATURE_' and values['_INPUTCREATURE_'] != ''):
         search = values['_INPUTCREATURE_']
         new_values = [x for x in get_creatures_list(values['_PARTYONLY_']) if search.lower() in x.lower()]
         window.Element('_CREATURES_').Update(new_values)
+        
+    elif (event == '_INPUTCREATUREACTION_' and values['_INPUTCREATUREACTION_'] != ''):
         search = values['_INPUTCREATUREACTION_']
         new_values = [x for x in get_actions_list() if search.lower() in x.lower()]
         window.Element('_CREATUREACTIONSSIDEBAR_').Update(new_values)
+        
+    elif (event == '_INPUTCREATURECONDITION_' and values['_INPUTCREATURECONDITION_'] != ''):
         search = values['_INPUTCREATURECONDITION_']
         new_values = [x for x in get_conditions_list() if search.lower() in x.lower()]
         window.Element('_CREATURECONDITIONSSIDEBAR_').Update(new_values)
         
+    
     elif (event == '_INPUTCREATURE_' and values['_INPUTCREATURE_'] == ''):
         window.Element('_CREATURES_').Update(get_creatures_list(values['_PARTYONLY_']))
         
